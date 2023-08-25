@@ -7,18 +7,8 @@ import (
 var (
 	EthServer = "wss://eth.getblock.io/ab0b1aa0-b490-4dc0-9bda-817c897a4580/mainnet" //"https://cloudflare-eth.com" //wss://cool-muddy-butterfly.discover.quiknode.pro/0e41f42d5a7c9611f30ef800444bfcb93d3ae9a6
 	//Ethereum Mainnet
-	EtherMainApiKEY = "R5DGF5PJIDEEXQBNW63YFV9FKM664MDIPE"
-
 	Address = strings.ToLower("0xff2b4721f997c242ff406a626f17df083bd2c568") //0xdAC17F958D2ee523a2206206994597C13D831ec7
-	ApiKey  = "R5DGF5PJIDEEXQBNW63YFV9FKM664MDIPE"
 )
-
-type Filter struct {
-	Address string
-	From    int64
-	To      int64
-	Topic   string
-}
 
 var BlockWithTimestamp map[string]string = make(map[string]string)
 
