@@ -1,6 +1,7 @@
 # scanEVMBlockData
 
 1. 测试
+
 在 example 目录下，执行```go test``` 测试 RPC 功能 
 
 根据项目函数增加测试函数
@@ -10,11 +11,15 @@
 扫链流程：
 
 获取当前最新区块高度 H1
+
 启动两个协程 A 和 B
+
 A 协程 监听网络区块，用区块高度监听Event数据
+
 B 协程 解析处理 历史Event数据
 
 所有Event数据写入通道，等候处理
+
 数据库设计：
 
 监听的Event topic为：
