@@ -20,7 +20,7 @@ B 协程 解析处理 历史Event数据
 数据表结构为：
 
 package tabletypes
-
+```text
 type Transfer struct {
 	ID          uint   `gorm:"primary_key"`
 	Blocknumber uint   `json:"blocknumber"`
@@ -60,7 +60,7 @@ type Owner struct {
 	Owner   string `json:"owner"`
 	Tokenid int64  `json:"tokenid"`
 }
-
+```
 
 calculate keccak256 hash of the event topic
 
