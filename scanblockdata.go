@@ -78,3 +78,13 @@ func main() {
 	}
 
 }
+
+// func CheckAddr(addr string) bool {
+// 	address := common.HexToAddress("0xff2b4721f997c242ff406a626f17df083bd2c568")
+// 	bytecode, err := client.CodeAt(context.Background(), address, nil) //nil is the latest block
+// 	if err != nil {
+// 		fmt.Printf("GET_CODE_ERROR: %s", err)
+// 		return false
+// 	}
+// 	return len(bytecode) > 0
+// }
