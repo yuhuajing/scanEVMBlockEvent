@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"main/common/config"
 	"main/common/dbconn"
 	"main/common/ethconn"
@@ -16,6 +17,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -36,12 +39,22 @@ func main() {
 	go explorer.Explorer()
 
 	client = ethconn.ConnBlockchain(config.EthServer)
-	dba := dbconn.Buildconnect()
-	dba.AutoMigrate(&tabletypes.Transfer{}, &tabletypes.Approval{}, &tabletypes.ApprovalForAll{}, &tabletypes.Owner{})
+	transfer_collection, approval_collection, approvalforall_collection, owner_collection := dbconn.GetCollection()
 
 	_tablelatestBlockNum := uint64(0)
-	res := []tabletypes.Transfer{}
-	dba.Model(&tabletypes.Transfer{}).Where("address = ?", config.Address).Order("blocknumber desc").Limit(1).Find(&res)
+
+	filter := bson.D{{Key: "address", Value: config.Address}}
+	opts := options.Find().SetSort(bson.D{{Key: "blocknumber", Value: -1}}).SetLimit(1)
+	cur, err := transfer_collection.Find(context.TODO(), filter, opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var res []tabletypes.Transfer
+
+	if err = cur.All(context.Background(), &res); err != nil {
+		log.Fatal(err)
+	}
+
 	if len(res) > 0 {
 		_tablelatestBlockNum = res[0].Blocknumber
 	}
@@ -73,7 +86,7 @@ func main() {
 			query.ToBlock = header.Number
 			go ethclientevent.GetAllTxInfoFromEtheClient(client, query, eventlogs)
 		case logs := <-eventlogs:
-			ethclientevent.ParseEventLogs(dba, logs)
+			ethclientevent.ParseEventLogs(transfer_collection, approval_collection, approvalforall_collection, owner_collection, logs)
 		}
 	}
 

@@ -21,24 +21,25 @@ var Topic map[string]int = map[string]int{ // index starts from 1
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef": 2, // Transfer
 	"0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31": 3} // ApprovalForAll
 
-type MysqlConFig struct {
-	Addr            string
-	Port            int
-	Db              string
-	Username        string
-	Password        string
-	MaxIdealConn    int
-	MaxOpenConn     int
-	ConnMaxLifetime int
+type MongodbConfig struct {
+	Addr     string
+	Port     int
+	Db       string
+	Username string
+	Password string
 }
 
-var MysqlCon = MysqlConFig{
+var MongodbCon = MongodbConfig{
 	"127.0.0.1",
-	3306,
-	"eventLog",
-	"root",
-	"123456",
-	10,
-	256,
-	600,
+	27017,
+	"clayte",
+	"clay",
+	"password",
 }
+
+const (
+	Transfer_collections       = "transfer"
+	Approval_collections       = "approval"
+	Approvalforall_collections = "approvalforall"
+	Owner_collections          = "owner"
+)
