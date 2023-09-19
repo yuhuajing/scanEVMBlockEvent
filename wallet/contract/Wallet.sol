@@ -36,8 +36,13 @@ contract Wallet {
         manager = _manager;
     }
 
-    function gettestnum()public pure returns(uint256){
-        return 5;
+    uint256 number;
+    function gettestnum() public view returns (uint256) {
+        return number;
+    }
+
+    function settestnum(uint256 _number) public {
+        number = _number;
     }
 
     function resetOrforgetPassword(
