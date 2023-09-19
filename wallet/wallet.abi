@@ -92,7 +92,7 @@
 				"type": "uint256"
 			}
 		],
-		"stateMutability": "pure",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -166,6 +166,19 @@
 			}
 		],
 		"name": "resetOrforgetPassword",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_number",
+				"type": "uint256"
+			}
+		],
+		"name": "settestnum",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
