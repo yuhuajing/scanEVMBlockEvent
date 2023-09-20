@@ -1,14 +1,18 @@
 [
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_manager",
-				"type": "address"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
+		"inputs": [],
+		"name": "AlreadyInitialManager",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidCodeInput",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidEmailInput",
+		"type": "error"
 	},
 	{
 		"inputs": [],
@@ -17,40 +21,78 @@
 	},
 	{
 		"inputs": [],
-		"name": "NotAuthorized",
+		"name": "InvalidQAInput",
 		"type": "error"
 	},
 	{
 		"inputs": [],
-		"name": "data",
+		"name": "NotManagerAuthorized",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotOwnerAuthorized",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "string",
+				"name": "inputQA",
+				"type": "string"
+			},
+			{
+				"indexed": true,
+				"internalType": "string",
+				"name": "storedQA",
+				"type": "string"
+			}
+		],
+		"name": "QAerror",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "string",
+				"name": "inputemail",
+				"type": "string"
+			},
+			{
+				"indexed": true,
+				"internalType": "string",
+				"name": "storedemail",
+				"type": "string"
+			}
+		],
+		"name": "emailerror",
+		"type": "event"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "fallback"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_bytes32",
+				"type": "bytes32"
+			}
+		],
+		"name": "convertByte32ToString",
 		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			},
 			{
 				"internalType": "string",
 				"name": "",
 				"type": "string"
 			}
 		],
-		"stateMutability": "view",
+		"stateMutability": "pure",
 		"type": "function"
 	},
 	{
@@ -83,37 +125,26 @@
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "gettestnum",
-		"outputs": [
+		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
+				"internalType": "address",
+				"name": "_manager",
+				"type": "address"
 			}
 		],
-		"stateMutability": "view",
+		"name": "initialManager",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "_email",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_code",
-				"type": "uint256"
-			}
-		],
-		"name": "isverified",
+		"inputs": [],
+		"name": "manager",
 		"outputs": [
 			{
-				"internalType": "bool",
+				"internalType": "address",
 				"name": "",
-				"type": "bool"
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -130,6 +161,19 @@
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_manager",
+				"type": "address"
+			}
+		],
+		"name": "resetManaget",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -173,19 +217,6 @@
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "_number",
-				"type": "uint256"
-			}
-		],
-		"name": "settestnum",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
 				"internalType": "string",
 				"name": "_email",
 				"type": "string"
@@ -200,5 +231,9 @@
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	}
 ]

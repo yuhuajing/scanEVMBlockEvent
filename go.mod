@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/ethereum/go-ethereum v1.12.2
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/status-im/keycard-go v0.2.0
 )
 
 require (
