@@ -3,6 +3,10 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts/utils/Create2.sol";
 
 contract Factory {
+    error AccountCreationFailed();
+    error InvalidManagerInput();
+    error InvalidSignerInpuu();
+
     address[] userwallet;
 
     function addElement(address element) private {
@@ -55,7 +59,9 @@ contract Factory {
                     _address,
                     convertStringToByte32(_email),
                     convertStringToByte32(_mixed_password),
-                    convertStringToByte32(concatStrings(_mixed_question , _mixed_answer))
+                    convertStringToByte32(
+                        concatStrings(_mixed_question, _mixed_answer)
+                    )
                 )
             );
     }
@@ -67,8 +73,13 @@ contract Factory {
         string memory _mixed_question,
         string memory _mixed_answer,
         address _implementation,
-        uint256 _salt
+        uint256 _salt,
+        address _manager,
+        address _signer
     ) external returns (address) {
+        if (_manager == address(0)) revert InvalidManagerInput();
+        if (_signer == address(0)) revert InvalidSignerInpuu();
+
         bytes memory code = getCreationCode(
             _address,
             email,
@@ -90,8 +101,15 @@ contract Factory {
         assembly {
             _account := create2(0, add(code, 0x20), mload(code), _salt)
         }
-        require(_account != address(0),"ACCOUNT_CREATED_FAILED");
-        //if (_account == address(0)) revert AccountCreationFailed();
+        if (_account == address(0)) revert AccountCreationFailed();
+
+        (bool success, bytes memory result) = _account.call(abi.encodeWithSignature("initData(address,address,string)", _manager,_signer,email));
+
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
         addElement(_account);
         return _account;
     }
