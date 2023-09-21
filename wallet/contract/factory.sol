@@ -5,27 +5,27 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 contract Factory {
     error AccountCreationFailed();
     error InvalidManagerInput();
-    error InvalidSignerInpuu();
+    error InvalidSignerInput();
 
     address[] userwallet;
 
-    function addElement(address element) private {
+    function addWallet(address element) private {
         userwallet.push(element);
     }
 
-    function getElement(uint256 index) public view returns (address) {
+    function getWalletByIndex(uint256 index) public view returns (address) {
         require(index < userwallet.length, "Invalid index");
         return userwallet[index];
     }
 
-    function getLength() public view returns (uint256) {
+    function getWalletLength() public view returns (uint256) {
         return userwallet.length;
     }
 
     constructor() payable {}
 
     function convertStringToByte32(string memory _texte)
-        public
+        internal
         pure
         returns (bytes32 result)
     {
@@ -78,7 +78,7 @@ contract Factory {
         address _signer
     ) external returns (address) {
         if (_manager == address(0)) revert InvalidManagerInput();
-        if (_signer == address(0)) revert InvalidSignerInpuu();
+        if (_signer == address(0)) revert InvalidSignerInput();
 
         bytes memory code = getCreationCode(
             _address,
@@ -103,14 +103,21 @@ contract Factory {
         }
         if (_account == address(0)) revert AccountCreationFailed();
 
-        (bool success, bytes memory result) = _account.call(abi.encodeWithSignature("initData(address,address,string)", _manager,_signer,email));
+        (bool success, bytes memory result) = _account.call(
+            abi.encodeWithSignature(
+                "initData(address,address,string)",
+                _manager,
+                _signer,
+                email
+            )
+        );
 
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))
             }
         }
-        addElement(_account);
+        addWallet(_account);
         return _account;
     }
 

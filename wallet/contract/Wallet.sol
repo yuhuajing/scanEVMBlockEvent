@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
-
 pragma solidity 0.8.18;
-
-import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 contract Wallet {
     error NotOwnerAuthorized();
     error NotManagerAuthorized();
     error InvalidInput();
     error AlreadyInitialManager();
-    error InvalidQAInput();
     error InvalidUserSignature();
     error InvalidCodeInput();
     event emailerror(string indexed inputemail, string indexed storedemail);
@@ -17,8 +13,6 @@ contract Wallet {
     mapping(string => UserInfo) userinfo;
     mapping(string => mapping(uint256 => bool)) email_code;
     bool initialized;
-    bool resetQA;
-    string QA;
     string email = "";
 
     struct UserInfo {
@@ -139,7 +133,7 @@ contract Wallet {
     }
 
     function convertByte32ToString(bytes32 _bytes32)
-        public
+        internal
         pure
         returns (string memory)
     {
@@ -196,7 +190,7 @@ contract Wallet {
     }
 
     function recoverStringFromRaw(string calldata message, bytes calldata sig)
-        public
+        internal
         pure
         returns (address)
     {
