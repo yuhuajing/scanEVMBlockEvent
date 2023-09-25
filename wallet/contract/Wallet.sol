@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+
 contract Wallet {
     error NotOwnerAuthorized();
     error NotManagerAuthorized();
@@ -181,85 +184,31 @@ contract Wallet {
         return abi.decode(footer, (address));
     }
 
-    function isValidSignature(string calldata _veridata, bytes calldata signature)
-        public
-        view
-        returns (bool)
-    {
-        return userinfo[email].signaddress == recoverStringFromRaw(_veridata,signature);
+    function isValidSignature(
+        string calldata _veridata,
+        bytes calldata signature
+    ) public view returns (bool) {
+        bytes32 _msghash = getMessageHash(_veridata);
+        address _owner = userinfo[email].signaddress;
+        return isValidSignature(_owner, _msghash, signature);
     }
 
-    function recoverStringFromRaw(string calldata message, bytes calldata sig)
-        internal
-        pure
-        returns (address)
-    {
-        // Sanity check before using assembly
-        require(sig.length == 65, "invalid signature");
-
-        // Decompose the raw signature into r, s and v (note the order)
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-        assembly {
-            r := calldataload(sig.offset)
-            s := calldataload(add(sig.offset, 0x20))
-            v := calldataload(add(sig.offset, 0x21))
-        }
-
-        return _ecrecover(message, v, r, s);
+    function getMessageHash(string memory str) internal pure returns (bytes32) {
+        bytes32 _msgHash = keccak256(abi.encodePacked(str));
+        return ECDSA.toEthSignedMessageHash(_msgHash);
     }
 
-    function _ecrecover(
-        string memory message,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal pure returns (address) {
-        // Compute the EIP-191 prefixed message
-        bytes memory prefixedMessage = abi.encodePacked(
-            "\x19Ethereum Signed Message:\n",
-            itoa(bytes(message).length),
-            message
-        );
+    function isValidSignature(
+        address _owner,
+        bytes32 hash,
+        bytes memory signature
+    ) internal view returns (bool) {
+        // _handleOverrideStatic();
 
-        // Compute the message digest
-        bytes32 digest = keccak256(prefixedMessage);
-
-        // Use the native ecrecover provided by the EVM
-        return ecrecover(digest, v, r, s);
+        return SignatureChecker.isValidSignatureNow(_owner, hash, signature);
     }
 
     fallback() external payable {}
 
     receive() external payable {}
-}
-
-function itoa(uint256 value) pure returns (string memory) {
-    // Count the length of the decimal string representation
-    uint256 length = 1;
-    uint256 v = value;
-    while ((v /= 10) != 0) {
-        length++;
-    }
-
-    // Allocated enough bytes
-    bytes memory result = new bytes(length);
-
-    // Place each ASCII string character in the string,
-    // right to left
-    while (true) {
-        length--;
-
-        // The ASCII value of the modulo 10 value
-        result[length] = bytes1(uint8(0x30 + (value % 10)));
-
-        value /= 10;
-
-        if (length == 0) {
-            break;
-        }
-    }
-
-    return string(result);
 }
