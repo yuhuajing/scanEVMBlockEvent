@@ -13,5 +13,8 @@ func ConnBlockchain(str string) *ethclient.Client {
 		fmt.Printf("Eth connect error:%s\n", err)
 		log.Fatal(err)
 	}
+	defer func() {
+		nclient.Close()
+	}()
 	return nclient
 }
