@@ -16,8 +16,9 @@ func GetDB() (*mongo.Database, error) {
 	// client, err := mongo.NewClient((options.Client().ApplyURI("mongodb://localhost:27017")))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	dsn := fmt.Sprintf("mongodb://%s:%s@%s:%d/%s",
-		config.MongodbCon.Username, config.MongodbCon.Password, config.MongodbCon.Addr, config.MongodbCon.Port, config.MongodbCon.Db)
+	dsn := fmt.Sprintf("mongodb://%s:%s@%s:%d",
+		config.MongodbCon.Username, config.MongodbCon.Password, config.MongodbCon.Addr, config.MongodbCon.Port)
+	//fmt.Println(dsn)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(
 		dsn,
 		//"mongodb://"+config.Username+":"+config.Password+"@localhost:27017",
@@ -46,7 +47,7 @@ func GetCollection() (transfer_collection *mongo.Collection, approval_collection
 	approval_collection = db.Collection(config.Approval_collections)
 	approvalforall_collection = db.Collection(config.Approvalforall_collections)
 	owner_collection = db.Collection(config.Owner_collections)
-	return nil, nil, nil, nil
+	return
 }
 
 // func Buildconnect() *gorm.DB {

@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/ethereum/go-ethereum v1.12.2
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/sirupsen/logrus v1.9.3
 )
 
 require (
@@ -54,7 +55,6 @@ require (
 	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/jinzhu/gorm v1.9.16
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
-	github.com/sirupsen/logrus v1.9.3
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	go.mongodb.org/mongo-driver v1.12.1

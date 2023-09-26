@@ -84,7 +84,7 @@ func Insert(transfer_collection *mongo.Collection, approval_collection *mongo.Co
 		var res tabletypes.ApprovalForAll
 		err := approvalforall_collection.FindOne(context.TODO(), bson.D{{Key: "txhash", Value: logdata.TxHash.Hex()}, {Key: "logindex", Value: int(logdata.Index)}}).Decode(&res)
 		if err != nil {
-			_, err = approval_collection.InsertOne(context.TODO(), bson.D{
+			_, err = approvalforall_collection.InsertOne(context.TODO(), bson.D{
 				{Key: "blocknumber", Value: logdata.BlockNumber},
 				{Key: "timestamp", Value: config.BlockWithTimestamp[fmt.Sprint(logdata.BlockNumber)]},
 				{Key: "address", Value: logdata.Address.Hex()},

@@ -9,7 +9,6 @@ import (
 	"main/common/ethconn"
 	"main/common/tabletypes"
 	"main/core/ethclientevent"
-	"main/explorer"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -36,7 +35,7 @@ func main() {
 		client = ethconn.ConnBlockchain(config.EthServer)
 	}
 
-	go explorer.Explorer()
+	//go explorer.Explorer()
 
 	client = ethconn.ConnBlockchain(config.EthServer)
 	transfer_collection, approval_collection, approvalforall_collection, owner_collection := dbconn.GetCollection()
@@ -47,6 +46,7 @@ func main() {
 	opts := options.Find().SetSort(bson.D{{Key: "blocknumber", Value: -1}}).SetLimit(1)
 	cur, err := transfer_collection.Find(context.TODO(), filter, opts)
 	if err != nil {
+		fmt.Println("49")
 		log.Fatal(err)
 	}
 	var res []tabletypes.Transfer
@@ -66,11 +66,11 @@ func main() {
 	} else {
 		startBlockHeight = _tablelatestBlockNum
 	}
-
+	//fmt.Println(startBlockHeight)
 	eventlogs := make(chan []types.Log)
 	query := ethereum.FilterQuery{
-		FromBlock: big.NewInt(int64(startBlockHeight)), //big.NewInt(int64(startBlockHeight)),
-		ToBlock:   big.NewInt(int64(latestblockNum)),
+		FromBlock: big.NewInt(int64(startBlockHeight)),
+		ToBlock:   big.NewInt(17971315), //int64(latestblockNum)),
 		Addresses: []common.Address{common.HexToAddress(config.Address)},
 		//Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
 	}
