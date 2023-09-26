@@ -52,3 +52,26 @@ var MysqlCon = MysqlConFig{
 	256,
 	600,
 }
+
+type MongodbConfig struct {
+	Addr     string
+	Port     int
+	Db       string
+	Username string
+	Password string
+}
+
+var MongodbCon = MongodbConfig{
+	"127.0.0.1",
+	27017,
+	"clayte",
+	"clay",
+	"password",
+}
+
+const (
+	Transfer_collections       = "transfer"
+	Approval_collections       = "approval"
+	Approvalforall_collections = "approvalforall"
+	Owner_collections          = "owner"
+)

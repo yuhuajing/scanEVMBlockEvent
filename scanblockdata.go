@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"main/common/config"
 	"main/common/dbconn"
 	"main/common/ethconn"
@@ -17,7 +18,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -26,6 +31,7 @@ var (
 	contractaddress                  string
 	blockchain                       string
 	rpcserver                        string
+	database                         string
 )
 
 func main() {
@@ -33,8 +39,14 @@ func main() {
 	flag.StringVar(&rpcserver, "rpcserver", "", "Blockchain RPC server")
 	flag.StringVar(&contractaddress, "address", "0xff2b4721f997c242ff406a626f17df083bd2c568", "Smart contract address")
 	flag.Uint64Var(&startBlockHeight, "startblock", 0, "if the transfer table is empty, the startblock is 17948500 by default, else the startblock equals to the blocknumer of the table last data filtered by contract address")
+	flag.StringVar(&database, "database", "mongodb", "database type to store event logs, default mongodb")
 
 	flag.Parse()
+
+	if database != "mysql" && database != "mongodb" {
+		fmt.Println("Not valid database, please select database from: mysql, mongodb")
+		return
+	}
 
 	if blockchain != "" {
 		switch blockchain {
@@ -65,19 +77,38 @@ func main() {
 	}
 
 	go explorer.Explorer()
-
-	client = ethconn.ConnBlockchain(config.EthServer)
-	dba := dbconn.Buildconnect()
-	dba.AutoMigrate(&tabletypes.Transfer{}, &tabletypes.Approval{}, &tabletypes.ApprovalForAll{}, &tabletypes.Owner{})
-
 	_tablelatestBlockNum := uint64(0)
+	latestblockNum, _ = client.BlockNumber(context.Background())
 	res := []tabletypes.Transfer{}
-	dba.Model(&tabletypes.Transfer{}).Where("address = ?", contractaddress).Order("blocknumber desc").Limit(1).Find(&res)
+	var dba *gorm.DB
+	var transfer_collection *mongo.Collection
+	var approval_collection *mongo.Collection
+	var approvalforall_collection *mongo.Collection
+	var owner_collection *mongo.Collection
+
+	if database == "mysql" {
+		dba = dbconn.Buildconnect()
+		dba.AutoMigrate(&tabletypes.Transfer{}, &tabletypes.Approval{}, &tabletypes.ApprovalForAll{}, &tabletypes.Owner{})
+
+		dba.Model(&tabletypes.Transfer{}).Where("address = ?", contractaddress).Order("blocknumber desc").Limit(1).Find(&res)
+
+	} else {
+		client = ethconn.ConnBlockchain(config.EthServer)
+		transfer_collection, approval_collection, approvalforall_collection, owner_collection = dbconn.GetCollection()
+		filter := bson.D{{Key: "address", Value: config.Address}}
+		opts := options.Find().SetSort(bson.D{{Key: "blocknumber", Value: -1}}).SetLimit(1)
+		cur, err := transfer_collection.Find(context.TODO(), filter, opts)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err = cur.All(context.Background(), &res); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	if len(res) > 0 {
 		_tablelatestBlockNum = res[0].Blocknumber
 	}
-
-	latestblockNum, _ = client.BlockNumber(context.Background())
 
 	if _tablelatestBlockNum == 0 {
 		startBlockHeight = uint64(17948500)
@@ -87,7 +118,7 @@ func main() {
 
 	eventlogs := make(chan []types.Log)
 	query := ethereum.FilterQuery{
-		FromBlock: big.NewInt(int64(startBlockHeight)), //big.NewInt(int64(startBlockHeight)),
+		FromBlock: big.NewInt(int64(startBlockHeight)),
 		ToBlock:   big.NewInt(int64(latestblockNum)),
 		Addresses: []common.Address{common.HexToAddress(contractaddress)},
 		//Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
@@ -117,7 +148,12 @@ func main() {
 		// case log := <-logs:
 		// 	ethclientevent.ParseEventLog(dba, log)
 		case logs := <-eventlogs:
-			ethclientevent.ParseEventLogs(dba, logs)
+			if database == "mysql" {
+				ethclientevent.ParseEventLogsMysql(dba, logs)
+			} else {
+				ethclientevent.ParseEventLogsMongo(transfer_collection, approval_collection, approvalforall_collection, owner_collection, logs)
+			}
+
 		}
 	}
 
