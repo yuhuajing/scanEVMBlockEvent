@@ -109,7 +109,6 @@ func ModifyOwner(owner_collection *mongo.Collection, address string, id int, own
 			{Key: "tokenid", Value: id},
 		})
 	} else {
-
 		filter := bson.D{{Key: "address", Value: address}, {Key: "tokenid", Value: id}}
 		update := bson.D{{Key: "$set", Value: bson.D{{Key: "owner", Value: owner}}}}
 		_, err := owner_collection.UpdateOne(context.TODO(), filter, update)
