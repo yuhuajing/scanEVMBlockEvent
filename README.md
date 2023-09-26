@@ -17,8 +17,9 @@
 编译 
 > go build ./scanblockdata.go
 
-1. 开始扫链
+1. 开始扫链(mongodb)
 
->  nohup ./scanblockdata --address="0xff2b4721f997c242ff406a626f17df083bd2c568" --startblock=17948501 >> scandata.log 2>&1 &
+>  nohup ./scanblockdata --address="0xff2b4721f997c242ff406a626f17df083bd2c568" --startblock=17948501 --database="mongodb" >> scandata.log 2>&1 &
 
-
+(mysql)
+>  nohup ./scanblockdata --address="0xff2b4721f997c242ff406a626f17df083bd2c568" --startblock=17948501 --database="mysql" >> scandata.log 2>&1 &
