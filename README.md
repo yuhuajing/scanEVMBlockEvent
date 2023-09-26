@@ -8,7 +8,8 @@
 	startblock   // 起始高度，默认是Transfer表格中最新一条数据的区块高度 (可选)
 	address    // 合约地址，默认为"0xff2b4721f997c242ff406a626f17df083bd2c568"（可选）            
 	blockchain        // 区块链网络，默认是以太坊 （可选）
-	rpcserver         // RPC，可以自定义RPC节点（可选）          
+	rpcserver         // RPC，可以自定义RPC节点（可选） 
+	database      // 数据库，默认是"mongodb" （可选）
 ```
 
 运行命令
