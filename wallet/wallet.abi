@@ -5,13 +5,35 @@
 		"type": "error"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "balance",
+				"type": "uint256"
+			}
+		],
+		"name": "ENotEnoughBalance",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "balance",
+				"type": "uint256"
+			}
+		],
+		"name": "ENotEnoughTokenBalance",
+		"type": "error"
+	},
+	{
 		"inputs": [],
 		"name": "InvalidCodeInput",
 		"type": "error"
 	},
 	{
 		"inputs": [],
-		"name": "InvalidEmailInput",
+		"name": "InvalidEmailSignature",
 		"type": "error"
 	},
 	{
@@ -21,7 +43,12 @@
 	},
 	{
 		"inputs": [],
-		"name": "InvalidQAInput",
+		"name": "InvalidPayeeTime",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidUserSignature",
 		"type": "error"
 	},
 	{
@@ -35,22 +62,111 @@
 		"type": "error"
 	},
 	{
+		"inputs": [],
+		"name": "NotPayeesetted",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "delay",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "minDelay",
+				"type": "uint256"
+			}
+		],
+		"name": "TimelockInsufficientDelay",
+		"type": "error"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
 				"indexed": true,
-				"internalType": "string",
-				"name": "inputQA",
-				"type": "string"
+				"internalType": "address",
+				"name": "payee",
+				"type": "address"
 			},
 			{
 				"indexed": true,
-				"internalType": "string",
-				"name": "storedQA",
-				"type": "string"
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
 			}
 		],
-		"name": "QAerror",
+		"name": "EthTransPayee",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "payee",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "tokencontract",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "tokenID",
+				"type": "uint256"
+			}
+		],
+		"name": "NFTTransPayee",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "payee",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "tokencontract",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "TokenTransPayee",
 		"type": "event"
 	},
 	{
@@ -75,25 +191,6 @@
 	{
 		"stateMutability": "payable",
 		"type": "fallback"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes32",
-				"name": "_bytes32",
-				"type": "bytes32"
-			}
-		],
-		"name": "convertByte32ToString",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "pure",
-		"type": "function"
 	},
 	{
 		"inputs": [
@@ -125,26 +222,110 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "executeEthTrans",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "executeNFTTrans",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "executeTokenTrans",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getMinDelay",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
 				"name": "_manager",
 				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_signaddress",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "_email",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "delay",
+				"type": "uint256"
 			}
 		],
-		"name": "initialManager",
+		"name": "initData",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "manager",
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_veridata",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
+			}
+		],
+		"name": "isValidManagerSignature",
 		"outputs": [
 			{
-				"internalType": "address",
+				"internalType": "bool",
 				"name": "",
-				"type": "address"
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_veridata",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
+			}
+		],
+		"name": "isValidUserSignature",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -180,11 +361,6 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_address",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
 				"name": "_newaddress",
 				"type": "address"
 			},
@@ -199,14 +375,19 @@
 				"type": "uint256"
 			},
 			{
-				"internalType": "string",
-				"name": "_mixed_question",
-				"type": "string"
+				"internalType": "bytes",
+				"name": "emailsignature",
+				"type": "bytes"
 			},
 			{
 				"internalType": "string",
-				"name": "_mixed_answer",
+				"name": "hash",
 				"type": "string"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
 			}
 		],
 		"name": "resetOrforgetPassword",
@@ -217,17 +398,149 @@
 	{
 		"inputs": [
 			{
-				"internalType": "string",
-				"name": "_email",
-				"type": "string"
+				"internalType": "address",
+				"name": "_signaddress",
+				"type": "address"
+			}
+		],
+		"name": "resetSignAddress",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "payee",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
 			},
 			{
 				"internalType": "uint256",
-				"name": "_code",
+				"name": "_delay",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "hash",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
+			}
+		],
+		"name": "setEthTransPayee",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newdelay",
 				"type": "uint256"
 			}
 		],
-		"name": "verifycode",
+		"name": "setMinDelay",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "tokencontract",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenID",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "payee",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_delay",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "hash",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
+			}
+		],
+		"name": "setNFTTransPayee",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "tokencontract",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "payee",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_delay",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "hash",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
+			}
+		],
+		"name": "setTokenTransPayee",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
