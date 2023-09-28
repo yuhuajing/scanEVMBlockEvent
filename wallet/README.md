@@ -20,8 +20,8 @@ Wallet.sol: 实现合约，实现工厂合约的实际业务逻辑
 
     //Manager 0xf5fBB766074124A574fc9aFaF9c9f139e7efB981
     const manager_prikey = "f07a77cb019764a524dce24cb47ac62bb231b4f0d7bab5f864f603f8cb0e344c"
-	const managerstr = "ManagerMessage"
-	// Manager签名:0x1063120d6df8f1c3c6df4fde201d50b9a524a0e4adbc04692f3fa0c5abccde4166040170f10431866b4193fda953bb6e5f6b6ce9856c46f30e7f9b0e780a22251b
+	const managerstr = "managerMessage"
+	// Manager签名:0xb70c777d43a46f6f10907d0ce5cbb4b5f41d9946d1ddf2e9dbb9a65116d4cacd01666d10b1d20b38e6e41ccd8cb82a5da9c6245b9a35c7cdf02517a407b6e2991b
 
     //Owner 0x156b6c24e78fede687950ba52a0b6b15a2c0ae11
     const owner_prikey = "867601ac4dc7028894d3ec525199a5289eeaa9ae38deba3a02511b31ce274901"
