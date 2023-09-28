@@ -12,6 +12,8 @@ contract Wallet {
     error NotManagerAuthorized();
     error InvalidInput();
     error AlreadyInitialManager();
+    error AlreadyInitialzed();
+    error NotOwnerOnlyEmail();
     error InvalidUserSignature();
     error InvalidEmailSignature();
     error InvalidCodeInput();
@@ -42,7 +44,7 @@ contract Wallet {
 
     mapping(string => UserInfo) userinfo;
     bool initialized;
-    string email = "";
+    string useremail;
     mapping(address => PayEthOrder) payEthinfo;
     mapping(address => PayTokenOrder) payTokeninfo;
     mapping(address => PayNFTOrder) payNFTinfo;
@@ -51,8 +53,8 @@ contract Wallet {
     struct UserInfo {
         string email;
         uint256 email_code;
-        address owner_address;
-        address signaddress;
+        address owner;
+        address signer;
         address manager;
     }
 
@@ -75,7 +77,7 @@ contract Wallet {
     }
 
     modifier onlyOwner() {
-        if (msg.sender != owner()) revert NotOwnerAuthorized();
+        if (msg.sender != userinfo[email()].owner) revert NotOwnerAuthorized();
         _;
     }
 
@@ -93,7 +95,7 @@ contract Wallet {
     }
 
     modifier onlyManager() {
-        if (msg.sender != userinfo[email].manager)
+        if (msg.sender != userinfo[email()].manager)
             revert NotManagerAuthorized();
         _;
     }
@@ -104,6 +106,14 @@ contract Wallet {
 
     function setMinDelay(uint256 newdelay) public virtual onlyManager {
         _minDelay = newdelay;
+    }
+
+    function getSigner() public view virtual returns (address) {
+        return userinfo[email()].signer;
+    }
+
+    function getManager() public view virtual returns (address) {
+        return userinfo[email()].manager;
     }
 
     function setEthTransPayee(
@@ -201,8 +211,8 @@ contract Wallet {
         string calldata hash,
         bytes calldata signature
     ) public onlyManager {
-        if (!equal(_email, email)) {
-            emit emailerror(_email, email);
+        if (!equal(_email, email())) {
+            emit emailerror(_email, email());
         }
         string memory _email_code = concatStrings(_email, _code);
         if (!isValidManagerSignature(_email_code, emailsignature))
@@ -210,7 +220,7 @@ contract Wallet {
         if (!isValidUserSignature(hash, signature))
             revert InvalidUserSignature();
         userinfo[_email].email_code = _code;
-        userinfo[_email].owner_address = _newaddress;
+        userinfo[_email].owner = _newaddress;
     }
 
     function executeCall(
@@ -254,37 +264,33 @@ contract Wallet {
 
     function resetManaget(address _manager) public onlyManager {
         if (_manager == address(0)) revert InvalidInput();
-        userinfo[email].manager = _manager;
+        userinfo[email()].manager = _manager;
     }
 
     function resetSignAddress(address _signaddress) external onlyOwner {
         if (_signaddress == address(0)) revert InvalidInput();
-        userinfo[email].signaddress = _signaddress;
+        userinfo[email()].signer = _signaddress;
     }
 
     function initData(
+        address _owneraddress,
         address _manager,
         address _signaddress,
-        string memory _email,
         uint256 delay
     ) external {
-        if (!equal(email, "")) revert AlreadyInitialManager();
-        email = _email;
-
-        if (userinfo[_email].manager != address(0))
-            revert AlreadyInitialManager();
-        if (userinfo[_email].signaddress != address(0)) revert InvalidInput();
-
+        if (initialized) revert AlreadyInitialzed();
+        useremail = email();
         UserInfo memory _userinfo = UserInfo({
-            email: _email,
+            email: useremail,
             email_code: 0,
-            owner_address: owner(),
-            signaddress: _signaddress,
+            owner: _owneraddress,
+            signer: _signaddress,
             manager: _manager
         });
-        userinfo[_email] = _userinfo;
+        userinfo[useremail] = _userinfo;
+
+        _minDelay = delay;
         initialized = true;
-        _minDelay=delay;
     }
 
     function equal(string memory a, string memory b)
@@ -297,15 +303,27 @@ contract Wallet {
             keccak256(bytes(a)) == keccak256(bytes(b));
     }
 
-    function owner() public view returns (address) {
+    function email() public view returns (string memory) {
         if (initialized) {
-            return userinfo[email].owner_address;
+            return useremail;
         }
         bytes memory footer = new bytes(0x20);
         assembly {
             extcodecopy(address(), add(footer, 0x20), 0x2d, 0x20)
         }
-        return abi.decode(footer, (address));
+        return convertByte32ToString(abi.decode(footer, (bytes32)));
+    }
+
+    function convertByte32ToString(bytes32 _bytes32)
+        internal
+        pure
+        returns (string memory)
+    {
+        bytes memory bytesArray = new bytes(32);
+        for (uint256 i; i < 32; i++) {
+            bytesArray[i] = _bytes32[i];
+        }
+        return string(bytesArray);
     }
 
     function isValidUserSignature(
@@ -313,7 +331,7 @@ contract Wallet {
         bytes calldata signature
     ) public view returns (bool) {
         bytes32 _msghash = getMessageHash(_veridata);
-        address _owner = userinfo[email].signaddress;
+        address _owner = userinfo[email()].signer;
         return isValidSignature(_owner, _msghash, signature);
     }
 
@@ -322,7 +340,7 @@ contract Wallet {
         bytes calldata signature
     ) public view returns (bool) {
         bytes32 _msghash = getMessageHash(_veridata);
-        address _manager = userinfo[email].manager;
+        address _manager = userinfo[email()].manager;
         return isValidSignature(_manager, _msghash, signature);
     }
 
