@@ -90,7 +90,7 @@ contract Factory {
     }
 
     function convertStringToByte32(string memory _texte)
-        public
+        internal
         pure
         returns (bytes32 result)
     {

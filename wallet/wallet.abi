@@ -1,7 +1,7 @@
 [
 	{
 		"inputs": [],
-		"name": "AlreadyInitialManager",
+		"name": "AlreadyHasPendingOrder",
 		"type": "error"
 	},
 	{
@@ -33,17 +33,12 @@
 	},
 	{
 		"inputs": [],
-		"name": "InvalidCodeInput",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "InvalidEmailSignature",
-		"type": "error"
-	},
-	{
-		"inputs": [],
 		"name": "InvalidInput",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidManagerSignature",
 		"type": "error"
 	},
 	{
@@ -68,7 +63,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "NotOwnerOnlyEmail",
+		"name": "NotPayeeAuthorized",
 		"type": "error"
 	},
 	{
@@ -160,6 +155,31 @@
 			{
 				"indexed": true,
 				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "ReEthTransPayee",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "payee",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
 				"name": "tokencontract",
 				"type": "address"
 			},
@@ -180,40 +200,8 @@
 		"type": "event"
 	},
 	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "string",
-				"name": "inputemail",
-				"type": "string"
-			},
-			{
-				"indexed": true,
-				"internalType": "string",
-				"name": "storedemail",
-				"type": "string"
-			}
-		],
-		"name": "emailerror",
-		"type": "event"
-	},
-	{
 		"stateMutability": "payable",
 		"type": "fallback"
-	},
-	{
-		"inputs": [],
-		"name": "email",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
 	},
 	{
 		"inputs": [
@@ -248,21 +236,21 @@
 		"inputs": [],
 		"name": "executeEthTrans",
 		"outputs": [],
-		"stateMutability": "payable",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [],
 		"name": "executeNFTTrans",
 		"outputs": [],
-		"stateMutability": "payable",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [],
 		"name": "executeTokenTrans",
 		"outputs": [],
-		"stateMutability": "payable",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -273,19 +261,6 @@
 				"internalType": "address",
 				"name": "",
 				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getMinDelay",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -381,10 +356,23 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "minDelay",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_manager",
+				"name": "manager",
 				"type": "address"
 			}
 		],
@@ -397,32 +385,27 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_newaddress",
+				"name": "newowner",
 				"type": "address"
 			},
 			{
-				"internalType": "string",
-				"name": "_email",
-				"type": "string"
-			},
-			{
 				"internalType": "uint256",
-				"name": "_code",
+				"name": "emailcode",
 				"type": "uint256"
 			},
 			{
 				"internalType": "bytes",
-				"name": "emailsignature",
+				"name": "managersignemailcode",
 				"type": "bytes"
 			},
 			{
 				"internalType": "string",
-				"name": "hash",
+				"name": "random",
 				"type": "string"
 			},
 			{
 				"internalType": "bytes",
-				"name": "signature",
+				"name": "usersignrandom",
 				"type": "bytes"
 			}
 		],
@@ -435,7 +418,7 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_signaddress",
+				"name": "signer",
 				"type": "address"
 			}
 		],
@@ -463,7 +446,7 @@
 			},
 			{
 				"internalType": "uint256",
-				"name": "_delay",
+				"name": "delay",
 				"type": "uint256"
 			},
 			{
@@ -519,7 +502,7 @@
 			},
 			{
 				"internalType": "uint256",
-				"name": "_delay",
+				"name": "delay",
 				"type": "uint256"
 			},
 			{
@@ -562,7 +545,7 @@
 			},
 			{
 				"internalType": "uint256",
-				"name": "_delay",
+				"name": "delay",
 				"type": "uint256"
 			},
 			{
@@ -579,6 +562,19 @@
 		"name": "setTokenTransPayee",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "useremail",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
