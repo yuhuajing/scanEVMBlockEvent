@@ -11,6 +11,25 @@ Wallet.sol: 实现合约，实现工厂合约的实际业务逻辑
 4. 通过  Wallet.sol 的 abi 和 bytecode 生成 对 Wallet.sol 合约的调用 golang代码 （abigen --bin=./wallet.bin --abi=./wallet.abi --pkg=wallet --out=wallet.go）
 5. 将 对合约 Wallet.sol 的调用全部转到 新的钱包地址，然后再 fallback 回 Wallet.sol 合约
 
+## 测试签名
+```javascript
+    //Signer 0xd514Ca657E536bB30962A31b22B4F39183328E0F
+    const signer_prikey = "7174cd9f4f8cd8bd8c91898744ba231b5db50d5191f14819408d51ccf8c6a8c9"
+	const signerstr = "signerMessage"
+	// Signer签名:0x0dafb1883ddad52462db50271df078c380b7737d5a98dbc404585d7a629187556caf6982e56969b3c342bc42664b0e1c4b23452ee6343e0995ee954f05a08c081c
+
+    //Manager 0xf5fBB766074124A574fc9aFaF9c9f139e7efB981
+    const manager_prikey = "f07a77cb019764a524dce24cb47ac62bb231b4f0d7bab5f864f603f8cb0e344c"
+	const managerstr = "ManagerMessage"
+	// Manager签名:0x1063120d6df8f1c3c6df4fde201d50b9a524a0e4adbc04692f3fa0c5abccde4166040170f10431866b4193fda953bb6e5f6b6ce9856c46f30e7f9b0e780a22251b
+
+    //Owner 0x156b6c24e78fede687950ba52a0b6b15a2c0ae11
+    const owner_prikey = "867601ac4dc7028894d3ec525199a5289eeaa9ae38deba3a02511b31ce274901"
+    //New_owner 0x9ab95fbf671a3b40f977eb116f948f69b26e663d
+    const new_owner_prikey = "5567ceafd8404b4d3578f454cd7b78e82c1bdd7711cabdc0b10da72c4d0a24f8"
+
+```
+
 测试读数据代码：
 ```golang
 func Test_wallet(t *testing.T) {
