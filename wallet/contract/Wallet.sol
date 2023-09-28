@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Wallet {
+    error NotPayeeAuthorized();
     error NotOwnerAuthorized();
     error NotManagerAuthorized();
     error InvalidInput();
@@ -22,6 +23,7 @@ contract Wallet {
     error ENotEnoughBalance(uint256 balance);
     error ENotEnoughTokenBalance(uint256 balance);
     error InvalidPayeeTime();
+    error AlreadyHasPendingOrder();
 
     event emailerror(string indexed inputemail, string indexed storedemail);
     event EthTransPayee(
@@ -45,9 +47,9 @@ contract Wallet {
     mapping(string => UserInfo) userinfo;
     bool initialized;
     string useremail;
-    mapping(address => PayEthOrder) payEthinfo;
-    mapping(address => PayTokenOrder) payTokeninfo;
-    mapping(address => PayNFTOrder) payNFTinfo;
+    mapping(string => PayEthOrder) payEthinfo;
+    mapping(string => PayTokenOrder) payTokeninfo;
+    mapping(string => PayNFTOrder) payNFTinfo;
     uint256 _minDelay = 300;
 
     struct UserInfo {
@@ -60,19 +62,22 @@ contract Wallet {
 
     struct PayEthOrder {
         uint256 delay;
-        uint256 amount;
+        address payee;
         address to;
+        uint256 amount;
     }
     struct PayTokenOrder {
         address contractaddress;
         uint256 delay;
-        uint256 amount; // approve(spender,amount)
+        address payee;
+        uint256 amount;
         address to;
     }
     struct PayNFTOrder {
         address contractaddress;
         uint256 delay;
-        uint256 tokenID; //approve(address to, uint256 tokenId)
+        address payee;
+        uint256 tokenID;
         address to;
     }
 
@@ -82,15 +87,21 @@ contract Wallet {
     }
 
     modifier onlyEthTransOwn() {
-        if (payEthinfo[msg.sender].delay == 0) revert NotPayeesetted();
+        PayEthOrder memory payeeinfo = payEthinfo[useremail];
+        if (payeeinfo.delay == 0) revert NotPayeesetted();
+        if (payeeinfo.payee != msg.sender) revert NotPayeeAuthorized();
         _;
     }
     modifier onlyTokenTransOwn() {
-        if (payTokeninfo[msg.sender].delay == 0) revert NotPayeesetted();
+        PayTokenOrder memory payeeinfo = payTokeninfo[useremail];
+        if (payeeinfo.delay == 0) revert NotPayeesetted();
+        if (payeeinfo.payee != msg.sender) revert NotPayeeAuthorized();
         _;
     }
     modifier onlyNFTTransOwn() {
-        if (payNFTinfo[msg.sender].delay == 0) revert NotPayeesetted();
+        PayNFTOrder memory payeeinfo = payNFTinfo[useremail];
+        if (payeeinfo.delay == 0) revert NotPayeesetted();
+        if (payeeinfo.payee != msg.sender) revert NotPayeeAuthorized();
         _;
     }
 
@@ -124,6 +135,9 @@ contract Wallet {
         string calldata hash,
         bytes calldata signature
     ) public onlyManager {
+        PayEthOrder memory payeeinfo = payEthinfo[useremail];
+        if (payeeinfo.delay != 0 && payeeinfo.delay >= block.timestamp)
+            revert AlreadyHasPendingOrder();
         if (!isValidUserSignature(hash, signature))
             revert InvalidUserSignature();
         if (address(this).balance < amount) {
@@ -133,12 +147,20 @@ contract Wallet {
         if (_delay < minDelay) {
             revert TimelockInsufficientDelay(_delay, minDelay);
         }
-        PayEthOrder memory payeeorder = PayEthOrder({
-            delay: block.timestamp + _delay,
-            amount: amount,
-            to: to
-        });
-        payEthinfo[payee] = payeeorder;
+        if (payeeinfo.delay != 0 && payeeinfo.delay < block.timestamp) {
+            payeeinfo.delay = _delay;
+            payeeinfo.payee = payee;
+            payeeinfo.to = to;
+            payeeinfo.amount = amount;
+        } else if (payeeinfo.delay == 0) {
+            PayEthOrder memory payeeorder = PayEthOrder({
+                payee: payee,
+                delay: block.timestamp + _delay,
+                amount: amount,
+                to: to
+            });
+            payEthinfo[useremail] = payeeorder;
+        }
         emit EthTransPayee(payee, to, amount);
     }
 
@@ -151,6 +173,9 @@ contract Wallet {
         string calldata hash,
         bytes calldata signature
     ) public onlyManager {
+        PayTokenOrder memory payeeinfo = payTokeninfo[useremail];
+        if (payeeinfo.delay != 0 && payeeinfo.delay >= block.timestamp)
+            revert AlreadyHasPendingOrder();
         if (!isValidUserSignature(hash, signature))
             revert InvalidUserSignature();
         if (IERC20(tokencontract).balanceOf(address(this)) < amount) {
@@ -162,13 +187,22 @@ contract Wallet {
         if (_delay < minDelay) {
             revert TimelockInsufficientDelay(_delay, minDelay);
         }
-        PayTokenOrder memory payeeorder = PayTokenOrder({
-            contractaddress: tokencontract,
-            delay: block.timestamp + _delay,
-            amount: amount, // approve(spender,amount)
-            to: to
-        });
-        payTokeninfo[payee] = payeeorder;
+        if (payeeinfo.delay != 0 && payeeinfo.delay < block.timestamp) {
+            payeeinfo.delay = _delay;
+            payeeinfo.payee = payee;
+            payeeinfo.to = to;
+            payeeinfo.amount = amount;
+            payeeinfo.contractaddress = tokencontract;
+        } else if (payeeinfo.delay == 0) {
+            PayTokenOrder memory payeeorder = PayTokenOrder({
+                payee: payee,
+                contractaddress: tokencontract,
+                delay: block.timestamp + _delay,
+                amount: amount, // approve(spender,amount)
+                to: to
+            });
+            payTokeninfo[useremail] = payeeorder;
+        }
         emit TokenTransPayee(payee, tokencontract, to, amount);
     }
 
@@ -181,6 +215,10 @@ contract Wallet {
         string calldata hash,
         bytes calldata signature
     ) public onlyManager {
+        PayNFTOrder memory payeeinfo = payNFTinfo[useremail];
+        if (payeeinfo.delay != 0 && payeeinfo.delay >= block.timestamp)
+            revert AlreadyHasPendingOrder();
+
         if (!isValidUserSignature(hash, signature))
             revert InvalidUserSignature();
         if (IERC721(tokencontract).ownerOf(tokenID) != address(this)) {
@@ -192,14 +230,23 @@ contract Wallet {
         if (_delay < minDelay) {
             revert TimelockInsufficientDelay(_delay, minDelay);
         }
-        PayNFTOrder memory payeeorder = PayNFTOrder({
-            contractaddress: tokencontract,
-            delay: block.timestamp + _delay,
-            tokenID: tokenID,
-            to: to
-            //approve(address to, uint256 tokenId)
-        });
-        payNFTinfo[payee] = payeeorder;
+        if (payeeinfo.delay != 0 && payeeinfo.delay < block.timestamp) {
+            payeeinfo.delay = _delay;
+            payeeinfo.payee = payee;
+            payeeinfo.to = to;
+            payeeinfo.tokenID = tokenID;
+            payeeinfo.contractaddress = tokencontract;
+        } else if (payeeinfo.delay == 0) {
+            PayNFTOrder memory payeeorder = PayNFTOrder({
+                payee: payee,
+                contractaddress: tokencontract,
+                delay: block.timestamp + _delay,
+                tokenID: tokenID,
+                to: to
+                //approve(address to, uint256 tokenId)
+            });
+            payNFTinfo[useremail] = payeeorder;
+        }
         emit NFTTransPayee(payee, tokencontract, to, tokenID);
     }
 
@@ -232,15 +279,15 @@ contract Wallet {
     }
 
     function executeEthTrans() external payable onlyEthTransOwn {
-        PayEthOrder memory payeeinfo = payEthinfo[msg.sender];
-        if (payeeinfo.delay > block.timestamp) revert InvalidPayeeTime();
+        PayEthOrder memory payeeinfo = payEthinfo[useremail];
+        if (payeeinfo.delay < block.timestamp) revert InvalidPayeeTime();
         Address.sendValue(payable(payeeinfo.to), payeeinfo.amount);
-        delete payEthinfo[msg.sender];
+        //delete payEthinfo[useremail];
     }
 
     function executeTokenTrans() external payable onlyTokenTransOwn {
-        PayTokenOrder memory payeeinfo = payTokeninfo[msg.sender];
-        if (payeeinfo.delay > block.timestamp) revert InvalidPayeeTime();
+        PayTokenOrder memory payeeinfo = payTokeninfo[useremail];
+        if (payeeinfo.delay < block.timestamp) revert InvalidPayeeTime();
         require(
             IERC20(payeeinfo.contractaddress).transfer(
                 payeeinfo.to,
@@ -248,18 +295,18 @@ contract Wallet {
             ),
             "Transfer_Faliled"
         );
-        delete payTokeninfo[msg.sender];
+        // delete payEthinfo[useremail];
     }
 
     function executeNFTTrans() external payable onlyNFTTransOwn {
-        PayNFTOrder memory payeeinfo = payNFTinfo[msg.sender];
-        if (payeeinfo.delay > block.timestamp) revert InvalidPayeeTime();
+        PayNFTOrder memory payeeinfo = payNFTinfo[useremail];
+        if (payeeinfo.delay < block.timestamp) revert InvalidPayeeTime();
         IERC721(payeeinfo.contractaddress).transferFrom(
             address(this),
             payeeinfo.to,
             payeeinfo.tokenID
         );
-        delete payNFTinfo[msg.sender];
+        //delete payEthinfo[useremail];
     }
 
     function resetManaget(address _manager) public onlyManager {
@@ -288,7 +335,6 @@ contract Wallet {
             manager: _manager
         });
         userinfo[useremail] = _userinfo;
-
         _minDelay = delay;
         initialized = true;
     }
