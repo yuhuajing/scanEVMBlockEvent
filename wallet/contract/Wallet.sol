@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.18;
+pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
@@ -33,6 +33,7 @@ contract Wallet {
         address indexed to,
         uint256 indexed amount
     );
+
     event TokenTransPayee(
         address indexed payee,
         address indexed tokencontract,
@@ -365,7 +366,20 @@ contract Wallet {
 
     function getMessageHash(string memory str) internal pure returns (bytes32) {
         bytes32 _msgHash = keccak256(abi.encodePacked(str));
-        return ECDSA.toEthSignedMessageHash(_msgHash);
+        //return ECDSA.toEthSignedMessageHash(_msgHash);
+        return toEthSignedMessageHash(_msgHash);
+    }
+
+    function toEthSignedMessageHash(bytes32 hash)
+        internal
+        pure
+        returns (bytes32)
+    {
+        // 哈希的长度为32
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+            );
     }
 
     function isValidSignature(
