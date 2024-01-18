@@ -40,6 +40,7 @@ func parseHistoryTx(StartTimes [2]int, latestblockNum int) {
 			FromBlock: big.NewInt(int64(StartTimes[index])),
 			ToBlock:   big.NewInt(int64(latestblockNum)),
 			Addresses: []common.Address{common.HexToAddress(contract)},
+			Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
 		}
 		go ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
 	}
@@ -60,6 +61,7 @@ func listenBlocks() {
 					FromBlock: big.NewInt(int64(expectBlockNum)),
 					ToBlock:   big.NewInt(int64(expectBlockNum)),
 					Addresses: []common.Address{common.HexToAddress(contract)},
+					Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
 				}
 				query.FromBlock = big.NewInt(int64(expectBlockNum))
 				query.ToBlock = header.Number

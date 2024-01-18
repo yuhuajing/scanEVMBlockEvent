@@ -20,11 +20,11 @@ import (
 func Insert(logdata types.Log) {
 	topic := logdata.Topics[0].Hex()
 	topicTable := config.Topic[topic]
-	owner := strings.ToLower("0x" + logdata.Topics[1].Hex()[26:])
-	operator := strings.ToLower("0x" + logdata.Topics[2].Hex()[26:])
-	txhash := strings.ToLower(logdata.TxHash.Hex())
+	owner := "0x" + logdata.Topics[1].Hex()[26:]
+	operator := "0x" + logdata.Topics[2].Hex()[26:]
+	txhash := logdata.TxHash.Hex()
 	logindex := int(logdata.Index)
-	address := strings.ToLower(logdata.Address.Hex())
+	address := logdata.Address.Hex()
 	timestamp := config.BlockWithTimestamp[logdata.BlockNumber]
 	if timestamp == 0 {
 		timestamp = blocktime.GetBlockTime(logdata.BlockNumber)
@@ -48,7 +48,7 @@ func Insert(logdata types.Log) {
 }
 
 func ModifyOwner(address string, id int, owner string, blockNumber uint64, logIndex uint) error {
-	filter := bson.M{"tokenid": id, "address": address}
+	filter := bson.M{"tokenid": id, "address": strings.ToLower(address)}
 	err, idres := GetDocuments(config.DbcollectionTrans, filter, &tabletypes.Owner{})
 	if err != nil {
 		return fmt.Errorf("InsertTransDB:err in getting Trans data: %v", err)
@@ -59,7 +59,7 @@ func ModifyOwner(address string, id int, owner string, blockNumber uint64, logIn
 			Blocknumber: blockNumber,
 			Address:     strings.ToLower(address),
 			Tokenid:     id,
-			Owner:       owner,
+			Owner:       strings.ToLower(owner),
 			Logindex:    logIndex,
 		}
 		err := InsertDocument(config.DbcollectionOwner, res)
@@ -71,7 +71,7 @@ func ModifyOwner(address string, id int, owner string, blockNumber uint64, logIn
 		res := idres[0].(*tabletypes.Owner)
 		if int(res.Blocknumber) < int(blockNumber) || int(res.Blocknumber) == int(blockNumber) && int(res.Logindex) < int(logIndex) {
 			filter := bson.M{"address": strings.ToLower(address), "tokenid": id}
-			update := bson.M{"$set": bson.M{"owner": owner}}
+			update := bson.M{"$set": bson.M{"owner": strings.ToLower(owner)}}
 			err := UpdateDocument(config.DbcollectionOwner, filter, update)
 			if err != nil {
 				return fmt.Errorf("InsertNFTdataDB:err in inserting NFTData")
@@ -83,7 +83,7 @@ func ModifyOwner(address string, id int, owner string, blockNumber uint64, logIn
 
 func InsertTransDB(topic, txhash, address, from, to string, logindex int, timestamp uint64, logdata types.Log) error {
 	tokenIDInt, _ := strconv.ParseInt(logdata.Topics[3].Hex()[2:], 16, 64)
-	filter := bson.M{"txhash": txhash, "logindex": logindex, "address": address}
+	filter := bson.M{"txhash": strings.ToLower(txhash), "logindex": logindex, "address": strings.ToLower(address)}
 	err, idres := GetDocuments(config.DbcollectionTrans, filter, &tabletypes.Transfer{})
 	if err != nil {
 		return fmt.Errorf("InsertTransDB:err in getting Trans data: %v", err)
@@ -95,8 +95,8 @@ func InsertTransDB(topic, txhash, address, from, to string, logindex int, timest
 			Timestamp:   timestamp,
 			Address:     strings.ToLower(logdata.Address.Hex()),
 			Func:        topic,
-			From:        from,
-			Operator:    to,
+			From:        strings.ToLower(from),
+			Operator:    strings.ToLower(to),
 			Tokenid:     tokenIDInt,
 			Txhash:      strings.ToLower(logdata.TxHash.Hex()),
 			Logindex:    logdata.Index,
@@ -115,7 +115,7 @@ func InsertTransDB(topic, txhash, address, from, to string, logindex int, timest
 }
 func InsertApprovalDB(topic, txhash, address, from, to string, logindex int, timestamp uint64, logdata types.Log) error {
 	tokenIDInt, _ := strconv.ParseInt(logdata.Topics[3].Hex()[2:], 16, 64)
-	filter := bson.M{"txhash": txhash, "logindex": logindex, "address": address}
+	filter := bson.M{"txhash": strings.ToLower(txhash), "logindex": logindex, "address": strings.ToLower(address)}
 	err, idres := GetDocuments(config.DbcollectionApproval, filter, &tabletypes.Approval{})
 	if err != nil {
 		return fmt.Errorf("InsertApprovalDB:err in getting Trans data: %v", err)
@@ -127,8 +127,8 @@ func InsertApprovalDB(topic, txhash, address, from, to string, logindex int, tim
 			Timestamp:   timestamp,
 			Address:     strings.ToLower(logdata.Address.Hex()),
 			Func:        topic,
-			From:        from,
-			Operator:    to,
+			From:        strings.ToLower(from),
+			Operator:    strings.ToLower(to),
 			Tokenid:     tokenIDInt,
 			Txhash:      strings.ToLower(logdata.TxHash.Hex()),
 			Logindex:    logdata.Index,
@@ -142,7 +142,7 @@ func InsertApprovalDB(topic, txhash, address, from, to string, logindex int, tim
 	return nil
 }
 func InsertApprovalAllDB(topic, txhash, address, from, to string, logindex int, timestamp uint64, logdata types.Log) error {
-	filter := bson.M{"txhash": txhash, "logindex": logindex, "address": address}
+	filter := bson.M{"txhash": strings.ToLower(txhash), "logindex": logindex, "address": strings.ToLower(address)}
 	err, idres := GetDocuments(config.DbcollectionApproForAll, filter, &tabletypes.Transfer{})
 	if err != nil {
 		return fmt.Errorf("InsertTransDB:err in getting Trans data: %v", err)
@@ -154,8 +154,8 @@ func InsertApprovalAllDB(topic, txhash, address, from, to string, logindex int, 
 			Timestamp:   timestamp,
 			Address:     strings.ToLower(logdata.Address.Hex()),
 			Func:        topic,
-			From:        from,
-			Operator:    to,
+			From:        strings.ToLower(from),
+			Operator:    strings.ToLower(to),
 			Txhash:      strings.ToLower(logdata.TxHash.Hex()),
 			Logindex:    logdata.Index,
 		}
