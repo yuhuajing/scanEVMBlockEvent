@@ -71,7 +71,7 @@ func ModifyOwner(address string, id int, owner string, blockNumber uint64, logIn
 		res := idres[0].(*tabletypes.Owner)
 		if int(res.Blocknumber) < int(blockNumber) || int(res.Blocknumber) == int(blockNumber) && int(res.Logindex) < int(logIndex) {
 			filter := bson.M{"address": strings.ToLower(address), "tokenid": id}
-			update := bson.M{"$set": bson.M{"owner": strings.ToLower(owner)}}
+			update := bson.M{"$set": bson.M{"owner": strings.ToLower(owner), "blocknumber": blockNumber}}
 			err := UpdateDocument(config.DbcollectionOwner, filter, update)
 			if err != nil {
 				return fmt.Errorf("InsertNFTdataDB:err in inserting NFTData")
