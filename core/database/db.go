@@ -49,7 +49,7 @@ func Insert(logdata types.Log) {
 
 func ModifyOwner(address string, id int, owner string, blockNumber uint64, logIndex uint) error {
 	filter := bson.M{"tokenid": id, "address": strings.ToLower(address)}
-	err, idres := GetDocuments(config.DbcollectionTrans, filter, &tabletypes.Owner{})
+	err, idres := GetDocuments(config.DbcollectionOwner, filter, &tabletypes.Owner{})
 	if err != nil {
 		return fmt.Errorf("InsertTransDB:err in getting Trans data: %v", err)
 	}
