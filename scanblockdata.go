@@ -10,10 +10,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"main/common/config"
-	"main/common/dbconn"
 	"main/common/tabletypes"
+	"main/core/database"
 	"main/core/ethclientevent"
 	"math/big"
+	"strings"
 )
 
 var (
@@ -30,19 +31,23 @@ func main() {
 	}
 	expectBlockNum = latestblockNum
 	StartTimes := getStartBlockFromTable()
-	parseHistoryTx(StartTimes, int(expectBlockNum))
+	parseHistoryTx(StartTimes)
 	listenBlocks()
 }
 
-func parseHistoryTx(StartTimes [2]int, latestblockNum int) {
+func parseHistoryTx(StartTimes [2]int) {
+	log.Print("parsing history\n")
 	for index, contract := range config.Contracts {
-		query := ethereum.FilterQuery{
-			FromBlock: big.NewInt(int64(StartTimes[index])),
-			ToBlock:   big.NewInt(int64(latestblockNum)),
-			Addresses: []common.Address{common.HexToAddress(contract)},
-			Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
-		}
-		go ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
+		go func(contract string, startTime int) {
+			log.Printf("parsing history with filter contracts: %s from: %d to：%d \n", contract, startTime, expectBlockNum)
+			query := ethereum.FilterQuery{
+				FromBlock: big.NewInt(int64(startTime)),
+				ToBlock:   big.NewInt(int64(expectBlockNum)),
+				Addresses: []common.Address{common.HexToAddress(contract)},
+				Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
+			}
+			ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
+		}(contract, StartTimes[index])
 	}
 }
 
@@ -56,18 +61,20 @@ func listenBlocks() {
 		case err := <-subheaders.Err():
 			fmt.Errorf("Parse Block error: %v\n", err)
 		case header := <-headers:
+			log.Printf("newblocks: %d\n ", header.Number)
 			for _, contract := range config.Contracts {
-				query := ethereum.FilterQuery{
-					FromBlock: big.NewInt(int64(expectBlockNum)),
-					ToBlock:   big.NewInt(int64(expectBlockNum)),
-					Addresses: []common.Address{common.HexToAddress(contract)},
-					Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
-				}
-				query.FromBlock = big.NewInt(int64(expectBlockNum))
-				query.ToBlock = header.Number
-				go ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
-				expectBlockNum = header.Number.Uint64() + 1
+				go func(contract string) {
+					log.Printf("newblocks: %d with filter contracts: %s from: %d to: %d\n", header.Number, contract, expectBlockNum, header.Number)
+					query := ethereum.FilterQuery{
+						FromBlock: big.NewInt(int64(expectBlockNum)),
+						ToBlock:   header.Number,
+						Addresses: []common.Address{common.HexToAddress(contract)},
+						Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
+					}
+					ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
+				}(contract)
 			}
+			expectBlockNum = header.Number.Uint64() + 1
 		case logs := <-eventlogs:
 			ethclientevent.ParseEventLogs(logs)
 		}
@@ -76,20 +83,16 @@ func listenBlocks() {
 
 func getStartBlockFromTable() [2]int {
 	var resTime [2]int
-	transferCollection := dbconn.GetCollection(config.DbcollectionTrans)
 	for index, contract := range config.Contracts {
-		filter := bson.D{{Key: "address", Value: contract}}
-		opts := options.Find().SetSort(bson.D{{Key: "blocknumber", Value: -1}}).SetLimit(1)
-		cur, err := transferCollection.Find(context.TODO(), filter, opts)
+		filter := bson.M{"address": strings.ToLower(contract)}
+		opts := options.Find().SetSort(bson.M{"blocknumber": -1}).SetLimit(1)
+		err, idres := database.GetDocuments(config.DbcollectionTrans, filter, &tabletypes.Transfer{}, opts)
 		if err != nil {
 			log.Fatalf("Err in getStartBlockFromTable: %s", err)
 		}
-		var res []tabletypes.Transfer
-		if err = cur.All(context.Background(), &res); err != nil {
-			log.Fatalf("Err parsing data in getStartBlockFromTable: %s", err)
-		}
-		if len(res) > 0 {
-			resTime[index] = int(res[0].Blocknumber)
+		if len(idres) > 0 {
+			res := idres[0].(*tabletypes.Transfer)
+			resTime[index] = int(res.Blocknumber)
 		} else {
 			resTime[index] = config.StartBlockHeight
 		}
