@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"main/common/config"
 	"main/common/dbconn"
@@ -10,84 +16,86 @@ import (
 	"main/common/tabletypes"
 	"main/core/ethclientevent"
 	"math/big"
-
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	startBlockHeight, latestblockNum uint64
-	client                           *ethclient.Client
+	client    = ethconn.ConnBlockchain(config.EthServer)
+	headers   = make(chan *types.Header)
+	eventlogs = make(chan []types.Log)
 )
 
 func main() {
-	client = ethconn.ConnBlockchain(config.EthServer)
+	//go explorer.Explorer()
+	transferCollection, approvalCollection, approvalforallCollection, ownerCollection := dbconn.GetCollection()
+	StartTimes := getStartBlockFromTable(transferCollection)
+	//agStart := getStartBlockFromTable(transfer_collection, config.Agcontract)
+	latestblockNum, err := client.BlockNumber(context.Background())
+	if err != nil {
+		log.Fatalf("Eth connect error:%v", err)
+	}
+	//go parseHistoryTx(config.Efescontract, efesStart, int(latestblockNum))
+	go parseHistoryTx(StartTimes, int(latestblockNum))
+	//go listenBlocks(transfer_collection, approval_collection, approvalforall_collection, owner_collection, config.Efescontract)
+	go listenBlocks(transferCollection, approvalCollection, approvalforallCollection, ownerCollection)
+}
 
-	headers := make(chan *types.Header) // listening new blocks
+func parseHistoryTx(StartTimes []int, latestblockNum int) {
+	for index, contract := range config.Contracts {
+		query := ethereum.FilterQuery{
+			FromBlock: big.NewInt(int64(StartTimes[index])),
+			ToBlock:   big.NewInt(int64(latestblockNum)),
+			Addresses: []common.Address{common.HexToAddress(contract)},
+		}
+		go ethclientevent.GetAllTxInfoFromEtheClient(client, query, eventlogs)
+	}
+}
+
+func listenBlocks(transferCollection, approvalCollection, approvalforallCollection, ownerCollection *mongo.Collection) {
 	subheaders, err := client.SubscribeNewHead(context.Background(), headers)
 	if err != nil {
-		fmt.Println(fmt.Errorf("Subscribe Block error: %v", err))
-		client = ethconn.ConnBlockchain(config.EthServer)
+		log.Fatalf("Subscribe Block error: %v", err)
 	}
-
-	//go explorer.Explorer()
-
-	client = ethconn.ConnBlockchain(config.EthServer)
-	transfer_collection, approval_collection, approvalforall_collection, owner_collection := dbconn.GetCollection()
-
-	_tablelatestBlockNum := uint64(0)
-
-	filter := bson.D{{Key: "address", Value: config.Address}}
-	opts := options.Find().SetSort(bson.D{{Key: "blocknumber", Value: -1}}).SetLimit(1)
-	cur, err := transfer_collection.Find(context.TODO(), filter, opts)
-	if err != nil {
-		fmt.Println("49")
-		log.Fatal(err)
-	}
-	var res []tabletypes.Transfer
-
-	if err = cur.All(context.Background(), &res); err != nil {
-		log.Fatal(err)
-	}
-
-	if len(res) > 0 {
-		_tablelatestBlockNum = res[0].Blocknumber
-	}
-
-	latestblockNum, _ = client.BlockNumber(context.Background())
-
-	if _tablelatestBlockNum == 0 {
-		startBlockHeight = uint64(17948500)
-	} else {
-		startBlockHeight = _tablelatestBlockNum
-	}
-	//fmt.Println(startBlockHeight)
-	eventlogs := make(chan []types.Log)
-	query := ethereum.FilterQuery{
-		FromBlock: big.NewInt(int64(startBlockHeight)),
-		ToBlock:   big.NewInt(17971315), //int64(latestblockNum)),
-		Addresses: []common.Address{common.HexToAddress(config.Address)},
-		//Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
-	}
-	go ethclientevent.GetAllTxInfoFromEtheClient(client, query, eventlogs)
 
 	for {
 		select {
 		case err := <-subheaders.Err():
-			fmt.Println(fmt.Errorf("Parse Block error: %v", err))
+			fmt.Errorf("Parse Block error: %v\n", err)
 			client = ethconn.ConnBlockchain(config.EthServer)
 		case header := <-headers:
-			query.FromBlock = header.Number
-			query.ToBlock = header.Number
-			go ethclientevent.GetAllTxInfoFromEtheClient(client, query, eventlogs)
+			for _, contract := range config.Contracts {
+				query := ethereum.FilterQuery{
+					FromBlock: big.NewInt(0),
+					ToBlock:   big.NewInt(0),
+					Addresses: []common.Address{common.HexToAddress(contract)},
+				}
+				query.FromBlock = header.Number
+				query.ToBlock = header.Number
+				go ethclientevent.GetAllTxInfoFromEtheClient(client, query, eventlogs)
+			}
 		case logs := <-eventlogs:
-			ethclientevent.ParseEventLogs(transfer_collection, approval_collection, approvalforall_collection, owner_collection, logs)
+			ethclientevent.ParseEventLogs(transferCollection, approvalCollection, approvalforallCollection, ownerCollection, logs)
 		}
 	}
+}
 
+func getStartBlockFromTable(transferCollection *mongo.Collection) []int {
+	var resTime []int
+	for index, contract := range config.Contracts {
+		filter := bson.D{{Key: "address", Value: contract}}
+		opts := options.Find().SetSort(bson.D{{Key: "blocknumber", Value: -1}}).SetLimit(1)
+		cur, err := transferCollection.Find(context.TODO(), filter, opts)
+		if err != nil {
+			log.Fatalf("Err in getStartBlockFromTable: %s", err)
+		}
+		var res []tabletypes.Transfer
+		if err = cur.All(context.Background(), &res); err != nil {
+			log.Fatalf("Err parsing data in getStartBlockFromTable: %s", err)
+		}
+		if len(res) > 0 {
+			resTime[index] = int(res[0].Blocknumber)
+		} else {
+			resTime[index] = config.StartBlockHeight
+		}
+	}
+	return resTime
 }

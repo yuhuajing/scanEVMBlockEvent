@@ -1,7 +1,6 @@
 package ethconn
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -10,8 +9,7 @@ import (
 func ConnBlockchain(str string) *ethclient.Client {
 	nclient, err := ethclient.Dial(str)
 	if err != nil {
-		fmt.Printf("Eth connect error:%s\n", err)
-		log.Fatal(err)
+		log.Fatalf("Eth connect error:%v", err)
 	}
 	return nclient
 }
