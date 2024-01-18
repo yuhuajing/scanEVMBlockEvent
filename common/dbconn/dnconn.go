@@ -2,48 +2,38 @@ package dbconn
 
 import (
 	"context"
-	"fmt"
-	//"github.com/ethereum/go-ethereum/log"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"main/common/config"
 	"time"
-
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func GetDB() (*mongo.Database, error) {
+func init() {
+	config.Mongoclient = GetMongoClient(config.Mongodburl)
+}
+
+func GetMongoClient(mongourl string) *mongo.Client {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	mongourl := fmt.Sprintf("mongodb://%s:%s@%s:%d",
-		config.MongodbCon.Username, config.MongodbCon.Password, config.MongodbCon.Addr, config.MongodbCon.Port)
-
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(
 		mongourl,
 	))
 
 	if err != nil {
-		return nil, err
-	}
+		log.Fatalf("err in conn MonggoDB: %v", err)
 
-	//Check the connection
-	err = client.Ping(context.TODO(), nil)
-	if err != nil {
-		return nil, err
 	}
-
-	database := client.Database(config.MongodbCon.Db)
-	return database, nil
+	return client
 }
 
-func GetCollection() (transfer_collection *mongo.Collection, approval_collection *mongo.Collection, approvalforall_collection *mongo.Collection, owner_collection *mongo.Collection) {
-	db, err := GetDB()
+func GetCollection(dbcollectionname string) *mongo.Collection {
+	err := config.Mongoclient.Ping(context.TODO(), nil)
 	if err != nil {
-		log.Fatalf("Err in connecting MongoDB", err)
+		config.Mongoclient = GetMongoClient(config.Mongodburl)
+		log.Fatalf("error in connecting mongodb: %v", err)
 	}
-	transfer_collection = db.Collection(config.Transfer_collections)
-	approval_collection = db.Collection(config.Approval_collections)
-	approvalforall_collection = db.Collection(config.Approvalforall_collections)
-	owner_collection = db.Collection(config.Owner_collections)
-	return
+	database := config.Mongoclient.Database(config.Dbname)
+	txdata_collection := database.Collection(dbcollectionname)
+	return txdata_collection
 }
