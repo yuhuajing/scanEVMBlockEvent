@@ -13,6 +13,12 @@ type Transfer struct {
 	Logindex    uint   `json:"logindex"`
 }
 
+type Startblocks struct {
+	Id          string `json:"id" gorm:"primary_key"`
+	Blocknumber uint64 `json:"blocknumber"`
+	Address     string `json:"address"`
+}
+
 type Approval struct {
 	Id          string `json:"id" gorm:"primary_key"`
 	Blocknumber uint64 `json:"blocknumber"`

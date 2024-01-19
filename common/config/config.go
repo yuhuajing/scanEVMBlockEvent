@@ -12,8 +12,7 @@ var (
 	//Ethereum Mainnet
 	Contracts = []string{strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"), strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568")}
 	//Agcontract       = strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568")
-	StartBlockHeight = 17943453
-	EndBlockHeight   = 19024755
+	StartBlockHeight = 19038014
 )
 
 var BlockWithTimestamp = make(map[uint64]uint64)
@@ -30,5 +29,6 @@ var (
 	DbcollectionApproval    = "approval"
 	DbcollectionApproForAll = "approvalall"
 	DbcollectionOwner       = "owner"
+	DbcollectionSB          = "startblock"
 	Mongoclient             *mongo.Client
 )
