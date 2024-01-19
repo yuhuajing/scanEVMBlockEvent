@@ -25,17 +25,35 @@ var (
 	err            error
 )
 
-func main() {
-	//go explorer.Explorer()
+func init() {
 	latestblockNum, err = config.Client.BlockNumber(context.Background())
 	if err != nil {
 		log.Fatalf("Eth connect error:%v", err)
 	}
 	expectBlockNum = latestblockNum + 1
-	StartTimes := getStartBlockFromTable()
-	fmt.Println(StartTimes)
-	parseHistoryTx(StartTimes)
-	listenBlocks()
+
+}
+
+func main() {
+	//go explorer.Explorer()
+	//StartTimes := getStartBlockFromTable()
+	//parseHistoryTx(StartTimes)
+	//listenBlocks()
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		StartTimes := getStartBlockFromTable()
+		parseHistoryTx(StartTimes)
+	}()
+
+	go func() {
+		defer wg.Done()
+		listenBlocks()
+	}()
+
+	wg.Wait()
 }
 
 func parseHistoryTx(StartTimes [2]int) {
