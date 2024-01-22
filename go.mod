@@ -4,9 +4,12 @@ go 1.21.4
 
 require (
 	github.com/ethereum/go-ethereum v1.13.10
+	github.com/foundVanting/opensea-stream-go v0.1.9
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/gofiber/fiber/v2 v2.52.0
+	github.com/mitchellh/mapstructure v1.5.0
+	github.com/xiaowang7777/phx v0.0.2
 	go.mongodb.org/mongo-driver v1.13.1
 )
 
@@ -33,7 +36,7 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/uuid v1.5.0 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
