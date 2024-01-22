@@ -73,6 +73,8 @@ func parseHistoryTx(StartTimes [2]int) {
 				Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
 			}
 			go ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
+			database.CreOrUpdateStartBlock(contract, latestblockNum)
+
 		}(tmpContract, tmpStartTime)
 	}
 	//	wg.Wait()
@@ -110,7 +112,6 @@ func listenBlocks() {
 
 				wg.Wait()
 				expectBlockNum = header.Number.Uint64() + 1
-
 			}
 		case logs := <-eventlogs:
 			ethclientevent.ParseEventLogs(logs)
