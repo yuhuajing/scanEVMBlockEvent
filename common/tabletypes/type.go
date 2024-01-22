@@ -54,3 +54,13 @@ type Owner struct {
 	Owner       string `json:"owner"`
 	Tokenid     int    `json:"tokenid"`
 }
+
+type OpenseaOrder struct {
+	Id             string `json:"id" gorm:"primary_key"`
+	Listingtime    int    `json:"listingtime"`
+	Expirationtime int    `json:"expirationtime"`
+	Orderhash      string `json:"orderhash"`
+	Owner          string `json:"owner"`
+	Address        string `json:"address"`
+	Tokenid        int    `json:"tokenid"`
+}

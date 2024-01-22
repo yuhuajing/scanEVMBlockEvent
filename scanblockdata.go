@@ -2,26 +2,18 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/foundVanting/opensea-stream-go/entity"
-	"github.com/foundVanting/opensea-stream-go/opensea"
-	openseatypes "github.com/foundVanting/opensea-stream-go/types"
-	"github.com/mitchellh/mapstructure"
-	"github.com/xiaowang7777/phx"
 	"go.mongodb.org/mongo-driver/bson"
-	"io"
 	"log"
 	"main/common/config"
 	"main/common/tabletypes"
 	"main/core/database"
 	"main/core/ethclientevent"
-	"math"
+	"main/openseaorder"
 	"math/big"
-	"net/http"
 	"strings"
 	"sync"
 )
@@ -45,9 +37,7 @@ func init() {
 
 func main() {
 	//go explorer.Explorer()
-	//subOpensea()
-	parseOpenseaListing("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c", "0x3ba331b7026b60e5f92f5a039cdded8e52c90cd3", []int{195})
-
+	parseOpenseaOrders()
 	//var wg sync.WaitGroup
 	//wg.Add(2)
 	//
@@ -65,135 +55,18 @@ func main() {
 	//wg.Wait()
 }
 
-type Order struct {
-	ListingTime    int64  `json:"listing_time"`
-	ExpirationTime int64  `json:"expiration_time"`
-	OrderHash      string `json:"order_hash"`
-}
-
-type Response struct {
-	Next     interface{} `json:"next"`
-	Previous interface{} `json:"previous"`
-	Orders   []struct {
-		ListingTime    int    `json:"listing_time"`
-		ExpirationTime int    `json:"expiration_time"`
-		OrderHash      string `json:"order_hash"`
-		ProtocolData   struct {
-			Parameters struct {
-				Offerer string `json:"offerer"`
-				Offer   []struct {
-					Token                string `json:"token"`
-					IdentifierOrCriteria string `json:"identifierOrCriteria"`
-				} `json:"offer"`
-			} `json:"parameters"`
-		} `json:"protocol_data"`
-	} `json:"orders"`
-}
-
-func parseOpenseaListing(contractaddress, owner string, nftid []int) {
-	openseaUrl := "https://api.opensea.io//api/v2/orders/ethereum/seaport/listings?asset_contract_address=%s&maker=%s"
-	openseaUrl = fmt.Sprintf(openseaUrl, contractaddress, owner)
-	tokenId := "&token_ids=%d"
-	idLen := len(nftid)
-	index := 0
-	for idLen > 0 && index < idLen {
-		targetIdUrl := ""
-		targetV := math.Min(float64(10), float64(idLen))
-		idLen -= int(targetV)
-		for targetV > 0 {
-			targetIdUrl += fmt.Sprintf(tokenId, nftid[index])
-			index++
-			targetV--
+func parseOpenseaOrders() {
+	for _, contractaddress := range config.Contracts {
+		for i := 0; i < config.ContractSupply[strings.ToLower(contractaddress)]; i++ {
+			allids, owner, err := database.GetOwnerByNFTId(contractaddress, i)
+			if err != nil {
+				log.Fatalf("database.GetOwnerByNFTId error: %v", err)
+			}
+			if len(allids) > 0 {
+				openseaorder.ParseOpenseaListing(contractaddress, owner, allids)
+			}
 		}
-		url := openseaUrl + targetIdUrl
-		//fmt.Println(url)
-		req, _ := http.NewRequest("GET", url, nil)
-		req.Header.Add("accept", "application/json")
-		req.Header.Add("x-api-key", "9602c2e9de24426196b5c317099155c7")
-		res, _ := http.DefaultClient.Do(req)
-		defer res.Body.Close()
-		body, _ := io.ReadAll(res.Body)
-		var response Response
-		err = json.Unmarshal(body, &response)
-		if err != nil {
-			fmt.Println("Error:", err)
-		}
-		fmt.Println(response)
 	}
-}
-
-func subOpensea() {
-	client := opensea.NewStreamClient(openseatypes.MAINNET, "9602c2e9de24426196b5c317099155c7", phx.LogInfo, func(err error) {
-		fmt.Println("opensea.NewStreamClient err:", err)
-	})
-	if err := client.Connect(); err != nil {
-		fmt.Println("client.Connect err:", err)
-		return
-	}
-
-	client.OnItemListed("Enforcer Founder Edition Spaceship", func(response any) {
-		var itemListedEvent entity.ItemListedEvent
-		err := mapstructure.Decode(response, &itemListedEvent)
-		if err != nil {
-			fmt.Println("mapstructure.Decode err:", err)
-		}
-		fmt.Printf("%+v\n", itemListedEvent)
-	})
-
-	//client.OnItemSold("collection-slug", func(response any) {
-	//	var itemSoldEvent entity.ItemSoldEvent
-	//	err := mapstructure.Decode(response, &itemSoldEvent)
-	//	if err != nil {
-	//		fmt.Println("mapstructure.Decode err:", err)
-	//	}
-	//	fmt.Printf("%+v\n", itemSoldEvent)
-	//})
-	//
-	//client.OnItemTransferred("collection-slug", func(response any) {
-	//	var itemTransferredEvent entity.ItemTransferredEvent
-	//	err := mapstructure.Decode(response, &itemTransferredEvent)
-	//	if err != nil {
-	//		fmt.Println("mapstructure.Decode err:", err)
-	//	}
-	//	fmt.Printf("%+v\n", itemTransferredEvent)
-	//})
-
-	client.OnItemCancelled("Enforcer Founder Edition Spaceship", func(response any) {
-		var itemCancelledEvent entity.ItemCancelledEvent
-		err := mapstructure.Decode(response, &itemCancelledEvent)
-		if err != nil {
-			fmt.Println("mapstructure.Decode err:", err)
-		}
-		fmt.Printf("%+v\n", itemCancelledEvent)
-	})
-
-	//client.OnItemReceivedBid("collection-slug", func(response any) {
-	//	var itemReceivedBidEvent entity.ItemReceivedBidEvent
-	//	err := mapstructure.Decode(response, &itemReceivedBidEvent)
-	//	if err != nil {
-	//		fmt.Println("mapstructure.Decode err:", err)
-	//	}
-	//	fmt.Printf("%+v\n", itemReceivedBidEvent)
-	//})
-	//client.OnItemReceivedOffer("collection-slug", func(response any) {
-	//	var itemReceivedOfferEvent entity.ItemReceivedOfferEvent
-	//	err := mapstructure.Decode(response, &itemReceivedOfferEvent)
-	//	if err != nil {
-	//		fmt.Println("mapstructure.Decode err:", err)
-	//	}
-	//	fmt.Printf("%+v\n", itemReceivedOfferEvent)
-	//})
-	//
-	//client.OnItemMetadataUpdated("collection-slug", func(response any) {
-	//	var itemMetadataUpdateEvent entity.ItemMetadataUpdateEvent
-	//	err := mapstructure.Decode(response, &itemMetadataUpdateEvent)
-	//	if err != nil {
-	//		fmt.Println("mapstructure.Decode err:", err)
-	//	}
-	//	fmt.Printf("%+v\n", itemMetadataUpdateEvent)
-	//})
-
-	select {}
 }
 
 func parseHistoryTx(StartTimes [2]int) {

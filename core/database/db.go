@@ -274,3 +274,77 @@ func UpdateDocument(collectionname string, filter bson.M, update bson.M) error {
 	}
 	return nil
 }
+
+func GetOwnerByNFTId(contractaddress string, id int) ([]int, string, error) {
+	owner := ""
+	allIds := make([]int, 0)
+	filter := bson.M{"address": strings.ToLower(contractaddress), "tokenid": id}
+	err, idres := GetDocuments(config.DbcollectionOwner, filter, &tabletypes.Owner{})
+	if err != nil {
+		return allIds, owner, nil
+	}
+	if len(idres) > 0 {
+		res := idres[0].(*tabletypes.Owner)
+		owner = res.Owner
+		if !config.NftOwners[strings.ToLower(contractaddress)][strings.ToLower(owner)] {
+			allIds, err = getAllIdByOwner(contractaddress, owner)
+			if err != nil {
+				return allIds, owner, err
+			}
+		}
+	}
+	return allIds, owner, nil
+}
+
+func getAllIdByOwner(contractaddress, owner string) ([]int, error) {
+	ownerids := make([]int, 0)
+	filter := bson.M{"address": strings.ToLower(contractaddress), "owner": strings.ToLower(owner)}
+	err, idres := GetDocuments(config.DbcollectionOwner, filter, &tabletypes.Owner{})
+	if err != nil {
+		return ownerids, err
+	}
+	if len(idres) > 0 {
+		for _, v := range idres {
+			res := v.(*tabletypes.Owner)
+			ownerids = append(ownerids, res.Tokenid)
+		}
+		config.NftOwners[strings.ToLower(contractaddress)][strings.ToLower(owner)] = true
+	}
+	return ownerids, nil
+}
+
+func AddOpenSeaOrder(orderhash, address, owner string, id string, listTime int, expirationtime int) error {
+	tokenIDInt, _ := strconv.ParseInt(id, 16, 64)
+
+	filter := bson.M{"tokenid": id, "address": strings.ToLower(address), "owner": strings.ToLower(owner)}
+	err, idres := GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{})
+	if err != nil {
+		return fmt.Errorf("AddOpenSeaOrder:err in getting opensea data: %v", err)
+	}
+	if len(idres) == 0 {
+		var res = tabletypes.OpenseaOrder{
+			Id:             utils.UUIDv4(),
+			Listingtime:    listTime,
+			Expirationtime: expirationtime,
+			Orderhash:      orderhash,
+			Address:        strings.ToLower(address),
+			Tokenid:        int(tokenIDInt),
+			Owner:          strings.ToLower(owner),
+		}
+		err := InsertDocument(config.DbcollectionOpensea, res)
+		if err != nil {
+			return fmt.Errorf("AddOpenSeaOrder:err in inserting openseaData")
+		}
+		return nil
+	} else {
+		res := idres[0].(*tabletypes.OpenseaOrder)
+		if res.Listingtime < listTime {
+			update := bson.M{"$set": bson.M{"listingtime": listTime, "expirationtime": expirationtime, "orderhash": orderhash}}
+			err := UpdateDocument(config.DbcollectionOpensea, filter, update)
+			if err != nil {
+				return fmt.Errorf("UpdateOpenSeaOrder:err in updating openseaData")
+			}
+		}
+	}
+	return nil
+}
