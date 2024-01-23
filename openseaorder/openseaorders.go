@@ -13,9 +13,10 @@ import (
 	"main/core/database"
 	"math"
 	"net/http"
+	"strconv"
 )
 
-type Response struct {
+type Listresponse struct {
 	Orders []struct {
 		ListingTime    int    `json:"listing_time"`
 		ExpirationTime int    `json:"expiration_time"`
@@ -49,14 +50,17 @@ func ParseOpenseaListing(contractaddress, owner string, nftid []int) {
 		}
 		url := openseaUrl + targetIdUrl
 		//fmt.Println(url)
-		req, _ := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			log.Fatalf("err in ParseOpenseaListingByCollection: %v", err)
+		}
 		req.Header.Add("accept", "application/json")
 		req.Header.Add("x-api-key", "9602c2e9de24426196b5c317099155c7")
 		res, _ := http.DefaultClient.Do(req)
 		defer res.Body.Close()
 		body, _ := io.ReadAll(res.Body)
-		var response Response
-		err := json.Unmarshal(body, &response)
+		var response Listresponse
+		err = json.Unmarshal(body, &response)
 		if err != nil {
 			log.Fatalf("unmarshal opensea data error: %v", err)
 		}
@@ -68,6 +72,80 @@ func ParseOpenseaListing(contractaddress, owner string, nftid []int) {
 		}
 
 		//	fmt.Println(response)
+	}
+}
+
+type listbycoll struct {
+	Listings []struct {
+		OrderHash string `json:"order_hash"`
+		Chain     string `json:"chain"`
+		//	Type      string `json:"type"`
+		Price struct {
+			Current struct {
+				Currency string `json:"currency"`
+				Decimals int    `json:"decimals"`
+				Value    string `json:"value"`
+			} `json:"current"`
+		} `json:"price"`
+		ProtocolData struct {
+			Parameters struct {
+				Offerer string `json:"offerer"`
+				Offer   []struct {
+					//ItemType             int    `json:"itemType"`
+					Token                string `json:"token"`
+					IdentifierOrCriteria string `json:"identifierOrCriteria"`
+					//StartAmount          string `json:"startAmount"`
+					//	EndAmount            string `json:"endAmount"`
+				} `json:"offer"`
+				//Consideration []struct {
+				//	ItemType             int    `json:"itemType"`
+				//	Token                string `json:"token"`
+				//	IdentifierOrCriteria string `json:"identifierOrCriteria"`
+				//	StartAmount          string `json:"startAmount"`
+				//	EndAmount            string `json:"endAmount"`
+				//	Recipient            string `json:"recipient"`
+				//} `json:"consideration"`
+				StartTime string `json:"startTime"`
+				EndTime   string `json:"endTime"`
+				//OrderType                       int    `json:"orderType"`
+				//Zone                            string `json:"zone"`
+				//ZoneHash                        string `json:"zoneHash"`
+				//Salt                            string `json:"salt"`
+				//ConduitKey                      string `json:"conduitKey"`
+				//TotalOriginalConsiderationItems int    `json:"totalOriginalConsiderationItems"`
+				//Counter                         int    `json:"counter"`
+			} `json:"parameters"`
+			//Signature interface{} `json:"signature"`
+		} `json:"protocol_data"`
+		//ProtocolAddress string `json:"protocol_address"`
+	} `json:"listings"`
+}
+
+func ParseOpenseaListingByCollection(collection string) {
+	openseaUrl := "https://api.opensea.io/api/v2/listings/collection/%s/all"
+	url := fmt.Sprintf(openseaUrl, collection)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatalf("err in ParseOpenseaListingByCollection: %v", err)
+	}
+
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("x-api-key", "9602c2e9de24426196b5c317099155c7")
+	res, _ := http.DefaultClient.Do(req)
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	var response listbycoll
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		log.Fatalf("unmarshal opensea data error: %v", err)
+	}
+	for _, order := range response.Listings {
+		startTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.StartTime, 10, 64)
+		endTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.EndTime, 10, 64)
+		err = database.AddOpenSeaOrder(order.OrderHash, order.ProtocolData.Parameters.Offer[0].Token, order.ProtocolData.Parameters.Offerer, order.ProtocolData.Parameters.Offer[0].IdentifierOrCriteria, int(startTime), int(endTime))
+		if err != nil {
+			log.Fatalf("database.AddOpenSeaOrder error: %v", err)
+		}
 	}
 }
 

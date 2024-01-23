@@ -37,7 +37,7 @@ func init() {
 
 func main() {
 	//go explorer.Explorer()
-	parseOpenseaOrders()
+	parseOpenseaOrdersByCollection()
 	//var wg sync.WaitGroup
 	//wg.Add(2)
 	//
@@ -53,6 +53,12 @@ func main() {
 	//}()
 	//
 	//wg.Wait()
+}
+
+func parseOpenseaOrdersByCollection() {
+	for _, coll := range config.Collections {
+		openseaorder.ParseOpenseaListingByCollection(coll)
+	}
 }
 
 func parseOpenseaOrders() {

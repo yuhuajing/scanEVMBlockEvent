@@ -15,6 +15,7 @@ var (
 		strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"): 1155,
 		strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568"): 515,
 	}
+	Collections      = []string{strings.ToLower("efesspacenation"), strings.ToLower("alphagatespacenation")}
 	StartBlockHeight = 19039000
 )
 
