@@ -9,6 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/xiaowang7777/phx"
 	"io"
+	"log"
 	"main/core/database"
 	"math"
 	"net/http"
@@ -37,7 +38,7 @@ func ParseOpenseaListing(contractaddress, owner string, nftid []int) {
 	tokenId := "&token_ids=%d"
 	idLen := len(nftid)
 	index := 0
-	for idLen > 0 && index < idLen {
+	for idLen > 0 && index < len(nftid) {
 		targetIdUrl := ""
 		targetLen := math.Min(float64(10), float64(idLen))
 		idLen -= int(targetLen)
@@ -57,13 +58,16 @@ func ParseOpenseaListing(contractaddress, owner string, nftid []int) {
 		var response Response
 		err := json.Unmarshal(body, &response)
 		if err != nil {
-			fmt.Println("Error:", err)
+			log.Fatalf("unmarshal opensea data error: %v", err)
 		}
 		for _, order := range response.Orders {
 			err = database.AddOpenSeaOrder(order.OrderHash, order.ProtocolData.Parameters.Offer[0].Token, order.ProtocolData.Parameters.Offerer, order.ProtocolData.Parameters.Offer[0].IdentifierOrCriteria, order.ListingTime, order.ExpirationTime)
+			if err != nil {
+				log.Fatalf("database.AddOpenSeaOrder error: %v", err)
+			}
 		}
 
-		fmt.Println(response)
+		//	fmt.Println(response)
 	}
 }
 

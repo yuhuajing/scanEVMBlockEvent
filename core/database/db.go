@@ -281,7 +281,7 @@ func GetOwnerByNFTId(contractaddress string, id int) ([]int, string, error) {
 	filter := bson.M{"address": strings.ToLower(contractaddress), "tokenid": id}
 	err, idres := GetDocuments(config.DbcollectionOwner, filter, &tabletypes.Owner{})
 	if err != nil {
-		return allIds, owner, nil
+		return allIds, owner, err
 	}
 	if len(idres) > 0 {
 		res := idres[0].(*tabletypes.Owner)
@@ -314,9 +314,8 @@ func getAllIdByOwner(contractaddress, owner string) ([]int, error) {
 }
 
 func AddOpenSeaOrder(orderhash, address, owner string, id string, listTime int, expirationtime int) error {
-	tokenIDInt, _ := strconv.ParseInt(id, 16, 64)
-
-	filter := bson.M{"tokenid": id, "address": strings.ToLower(address), "owner": strings.ToLower(owner)}
+	tokenIDInt, _ := strconv.ParseInt(id, 10, 64)
+	filter := bson.M{"orderhash": orderhash}
 	err, idres := GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{})
 	if err != nil {
 		return fmt.Errorf("AddOpenSeaOrder:err in getting opensea data: %v", err)
@@ -335,16 +334,16 @@ func AddOpenSeaOrder(orderhash, address, owner string, id string, listTime int, 
 		if err != nil {
 			return fmt.Errorf("AddOpenSeaOrder:err in inserting openseaData")
 		}
-		return nil
-	} else {
-		res := idres[0].(*tabletypes.OpenseaOrder)
-		if res.Listingtime < listTime {
-			update := bson.M{"$set": bson.M{"listingtime": listTime, "expirationtime": expirationtime, "orderhash": orderhash}}
-			err := UpdateDocument(config.DbcollectionOpensea, filter, update)
-			if err != nil {
-				return fmt.Errorf("UpdateOpenSeaOrder:err in updating openseaData")
-			}
-		}
 	}
+	//else {
+	//	res := idres[0].(*tabletypes.OpenseaOrder)
+	//	if res.Listingtime < listTime {
+	//		update := bson.M{"$set": bson.M{"listingtime": listTime, "expirationtime": expirationtime, "orderhash": orderhash}}
+	//		err := UpdateDocument(config.DbcollectionOpensea, filter, update)
+	//		if err != nil {
+	//			return fmt.Errorf("UpdateOpenSeaOrder:err in updating openseaData")
+	//		}
+	//	}
+	//}
 	return nil
 }

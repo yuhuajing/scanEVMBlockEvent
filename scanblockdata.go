@@ -57,7 +57,12 @@ func main() {
 
 func parseOpenseaOrders() {
 	for _, contractaddress := range config.Contracts {
+		fmt.Println("parsing contract opensea orders", contractaddress)
+		config.NftOwners[strings.ToLower(contractaddress)] = make(map[string]bool)
 		for i := 0; i < config.ContractSupply[strings.ToLower(contractaddress)]; i++ {
+			if contractaddress == "0x1aae1a668c92eb411eafd80dd0c60ca67ad17a1c" {
+				break
+			}
 			allids, owner, err := database.GetOwnerByNFTId(contractaddress, i)
 			if err != nil {
 				log.Fatalf("database.GetOwnerByNFTId error: %v", err)
