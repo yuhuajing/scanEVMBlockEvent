@@ -10,10 +10,13 @@ import (
 	"github.com/xiaowang7777/phx"
 	"io"
 	"log"
+	"main/common/config"
 	"main/core/database"
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 )
 
 type Listresponse struct {
@@ -55,7 +58,7 @@ func ParseOpenseaListing(contractaddress, owner string, nftid []int) {
 			log.Fatalf("err in ParseOpenseaListingByCollection: %v", err)
 		}
 		req.Header.Add("accept", "application/json")
-		req.Header.Add("x-api-key", "9602c2e9de24426196b5c317099155c7")
+		req.Header.Add("x-api-key", config.OpenseaToken)
 		res, _ := http.DefaultClient.Do(req)
 		defer res.Body.Close()
 		body, _ := io.ReadAll(res.Body)
@@ -130,7 +133,7 @@ func ParseOpenseaListingByCollection(collection string) {
 	}
 
 	req.Header.Add("accept", "application/json")
-	req.Header.Add("x-api-key", "9602c2e9de24426196b5c317099155c7")
+	req.Header.Add("x-api-key", config.OpenseaToken)
 	res, _ := http.DefaultClient.Do(req)
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
@@ -149,8 +152,8 @@ func ParseOpenseaListingByCollection(collection string) {
 	}
 }
 
-func subOpensea() {
-	client := opensea.NewStreamClient(openseatypes.MAINNET, "9602c2e9de24426196b5c317099155c7", phx.LogInfo, func(err error) {
+func SubOpensea() {
+	client := opensea.NewStreamClient(openseatypes.TESTNET, config.OpenseaToken, phx.LogInfo, func(err error) {
 		fmt.Println("opensea.NewStreamClient err:", err)
 	})
 	if err := client.Connect(); err != nil {
@@ -158,14 +161,62 @@ func subOpensea() {
 		return
 	}
 
-	client.OnItemListed("Enforcer Founder Edition Spaceship", func(response any) {
+	client.OnItemListed(config.TestColl, func(response any) {
 		var itemListedEvent entity.ItemListedEvent
 		err := mapstructure.Decode(response, &itemListedEvent)
 		if err != nil {
+			fmt.Println("mapstructure.Decode listing err:", err)
+		}
+		orderhash := itemListedEvent.Payload.OrderHash
+
+		//chainName := strings.Split(itemListedEvent.Payload.Item.NftId, "/")[0]
+		contract := strings.Split(itemListedEvent.Payload.Item.NftId, "/")[1]
+		nftID := strings.Split(itemListedEvent.Payload.Item.NftId, "/")[2]
+		owner := itemListedEvent.Payload.Maker.Address
+		listingTime, err := parseTime(itemListedEvent.Payload.ListingDate)
+		if err != nil {
+			fmt.Println("parseTime ListingDate err:", err)
+		}
+		expireTime, err := parseTime(itemListedEvent.Payload.ExpirationDate)
+		if err != nil {
+			fmt.Println("parseTime ExpirationDate err:", err)
+		}
+		err = database.AddOpenSeaOrder(orderhash, contract, owner, nftID, listingTime, expireTime)
+		if err != nil {
+			log.Fatalf("database.AddOpenSeaOrder error: %v", err)
+		}
+	})
+
+	client.OnItemCancelled(config.TestColl, func(response any) {
+		var itemCancelledEvent entity.ItemCancelledEvent
+		err := mapstructure.Decode(response, &itemCancelledEvent)
+		if err != nil {
 			fmt.Println("mapstructure.Decode err:", err)
 		}
-		fmt.Printf("%+v\n", itemListedEvent)
+		err = database.CancelOpenSeaOrder(itemCancelledEvent.Payload.OrderHash)
+		if err != nil {
+			log.Fatalf("database.CancelOpenSeaOrder error: %v", err)
+		}
+		fmt.Printf("%+v\n", itemCancelledEvent.Payload.OrderHash)
 	})
+
+	//client.OnItemListed(config.AgCollections, func(response any) {
+	//	var itemListedEvent entity.ItemListedEvent
+	//	err := mapstructure.Decode(response, &itemListedEvent)
+	//	if err != nil {
+	//		fmt.Println("mapstructure.Decode listing err:", err)
+	//	}
+	//	fmt.Printf("%+v\n", itemListedEvent)
+	//})
+	//
+	//client.OnItemCancelled(config.AgCollections, func(response any) {
+	//	var itemCancelledEvent entity.ItemCancelledEvent
+	//	err := mapstructure.Decode(response, &itemCancelledEvent)
+	//	if err != nil {
+	//		fmt.Println("mapstructure.Decode err:", err)
+	//	}
+	//	fmt.Printf("%+v\n", itemCancelledEvent)
+	//})
 
 	//client.OnItemSold("collection-slug", func(response any) {
 	//	var itemSoldEvent entity.ItemSoldEvent
@@ -184,15 +235,6 @@ func subOpensea() {
 	//	}
 	//	fmt.Printf("%+v\n", itemTransferredEvent)
 	//})
-
-	client.OnItemCancelled("Enforcer Founder Edition Spaceship", func(response any) {
-		var itemCancelledEvent entity.ItemCancelledEvent
-		err := mapstructure.Decode(response, &itemCancelledEvent)
-		if err != nil {
-			fmt.Println("mapstructure.Decode err:", err)
-		}
-		fmt.Printf("%+v\n", itemCancelledEvent)
-	})
 
 	//client.OnItemReceivedBid("collection-slug", func(response any) {
 	//	var itemReceivedBidEvent entity.ItemReceivedBidEvent
@@ -221,4 +263,12 @@ func subOpensea() {
 	//})
 
 	select {}
+}
+
+func parseTime(timestr string) (int, error) {
+	t, err := time.Parse(time.RFC3339Nano, timestr)
+	if err != nil {
+		return 0, err
+	}
+	return int(t.Unix()), nil
 }

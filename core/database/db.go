@@ -315,7 +315,7 @@ func getAllIdByOwner(contractaddress, owner string) ([]int, error) {
 
 func AddOpenSeaOrder(orderhash, address, owner string, id string, listTime int, expirationtime int) error {
 	tokenIDInt, _ := strconv.ParseInt(id, 10, 64)
-	filter := bson.M{"orderhash": orderhash}
+	filter := bson.M{"orderhash": strings.ToLower(orderhash)}
 	err, idres := GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{})
 	if err != nil {
 		return fmt.Errorf("AddOpenSeaOrder:err in getting opensea data: %v", err)
@@ -325,10 +325,11 @@ func AddOpenSeaOrder(orderhash, address, owner string, id string, listTime int, 
 			Id:             utils.UUIDv4(),
 			Listingtime:    listTime,
 			Expirationtime: expirationtime,
-			Orderhash:      orderhash,
+			Orderhash:      strings.ToLower(orderhash),
 			Address:        strings.ToLower(address),
 			Tokenid:        int(tokenIDInt),
 			Owner:          strings.ToLower(owner),
+			Status:         tabletypes.StatusListing,
 		}
 		err := InsertDocument(config.DbcollectionOpensea, res)
 		if err != nil {
@@ -345,5 +346,21 @@ func AddOpenSeaOrder(orderhash, address, owner string, id string, listTime int, 
 	//		}
 	//	}
 	//}
+	return nil
+}
+
+func CancelOpenSeaOrder(orderhash string) error {
+	filter := bson.M{"orderhash": strings.ToLower(orderhash)}
+	err, idres := GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{})
+	if err != nil {
+		return fmt.Errorf("CancelOpenSeaOrder:err in getting opensea data: %v", err)
+	}
+	if len(idres) != 0 {
+		update := bson.M{"$set": bson.M{"status": tabletypes.StatusCancel}}
+		err := UpdateDocument(config.DbcollectionOpensea, filter, update)
+		if err != nil {
+			return fmt.Errorf("UpdateOpenSeaOrder:err in updating openseaData")
+		}
+	}
 	return nil
 }

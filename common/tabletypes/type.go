@@ -55,6 +55,17 @@ type Owner struct {
 	Tokenid     int    `json:"tokenid"`
 }
 
+type Status string
+
+const (
+	//StatusUnknown is a Status of type unknown.
+	StatusUnknown Status = ""
+	//StatusListing is a Status of type listing.
+	StatusListing Status = "listing"
+	//StatusCancel is a Status of type cancel.
+	StatusCancel Status = "cancel"
+)
+
 type OpenseaOrder struct {
 	Id             string `json:"id" gorm:"primary_key"`
 	Listingtime    int    `json:"listingtime"`
@@ -63,4 +74,5 @@ type OpenseaOrder struct {
 	Owner          string `json:"owner"`
 	Address        string `json:"address"`
 	Tokenid        int    `json:"tokenid"`
+	Status         Status `json:"status"`
 }

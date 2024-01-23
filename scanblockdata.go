@@ -37,22 +37,30 @@ func init() {
 
 func main() {
 	//go explorer.Explorer()
-	parseOpenseaOrdersByCollection()
-	//var wg sync.WaitGroup
-	//wg.Add(2)
-	//
-	//go func() {
-	//	defer wg.Done()
-	//	StartTimes := getStartBlockFromTable()
-	//	parseHistoryTx(StartTimes)
-	//}()
-	//
-	//go func() {
-	//	defer wg.Done()
-	//	listenBlocks()
-	//}()
-	//
-	//wg.Wait()
+	var wg sync.WaitGroup
+	wg.Add(4)
+
+	go func() {
+		defer wg.Done()
+		StartTimes := getStartBlockFromTable()
+		parseHistoryTx(StartTimes)
+	}()
+
+	go func() {
+		defer wg.Done()
+		listenBlocks()
+	}()
+
+	go func() {
+		defer wg.Done()
+		parseOpenseaOrdersByCollection()
+	}()
+
+	go func() {
+		defer wg.Done()
+		openseaorder.SubOpensea()
+	}()
+	wg.Wait()
 }
 
 func parseOpenseaOrdersByCollection() {

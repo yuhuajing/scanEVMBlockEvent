@@ -15,8 +15,12 @@ var (
 		strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"): 1155,
 		strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568"): 515,
 	}
-	Collections      = []string{strings.ToLower("efesspacenation"), strings.ToLower("alphagatespacenation")}
+	Collections      = []string{EfesCollections, AgCollections}
+	EfesCollections  = strings.ToLower("efesspacenation")
+	AgCollections    = strings.ToLower("alphagatespacenation")
+	TestColl         = "mytoken-7752"
 	StartBlockHeight = 19039000
+	OpenseaToken     = "9602c2e9de24426196b5c317099155c7"
 )
 
 var BlockWithTimestamp = make(map[uint64]uint64)
