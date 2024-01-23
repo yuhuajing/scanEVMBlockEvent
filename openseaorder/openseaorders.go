@@ -153,7 +153,7 @@ func ParseOpenseaListingByCollection(collection string) {
 }
 
 func SubOpensea() {
-	client := opensea.NewStreamClient(openseatypes.TESTNET, config.OpenseaToken, phx.LogInfo, func(err error) {
+	client := opensea.NewStreamClient(openseatypes.MAINNET, config.OpenseaToken, phx.LogInfo, func(err error) {
 		fmt.Println("opensea.NewStreamClient err:", err)
 	})
 	if err := client.Connect(); err != nil {
@@ -161,7 +161,7 @@ func SubOpensea() {
 		return
 	}
 
-	client.OnItemListed(config.TestColl, func(response any) {
+	client.OnItemListed(config.EfesCollections, func(response any) {
 		var itemListedEvent entity.ItemListedEvent
 		err := mapstructure.Decode(response, &itemListedEvent)
 		if err != nil {
@@ -187,7 +187,7 @@ func SubOpensea() {
 		}
 	})
 
-	client.OnItemCancelled(config.TestColl, func(response any) {
+	client.OnItemCancelled(config.EfesCollections, func(response any) {
 		var itemCancelledEvent entity.ItemCancelledEvent
 		err := mapstructure.Decode(response, &itemCancelledEvent)
 		if err != nil {
@@ -197,26 +197,47 @@ func SubOpensea() {
 		if err != nil {
 			log.Fatalf("database.CancelOpenSeaOrder error: %v", err)
 		}
-		fmt.Printf("%+v\n", itemCancelledEvent.Payload.OrderHash)
+		//fmt.Printf("%+v\n", itemCancelledEvent.Payload.OrderHash)
 	})
 
-	//client.OnItemListed(config.AgCollections, func(response any) {
-	//	var itemListedEvent entity.ItemListedEvent
-	//	err := mapstructure.Decode(response, &itemListedEvent)
-	//	if err != nil {
-	//		fmt.Println("mapstructure.Decode listing err:", err)
-	//	}
-	//	fmt.Printf("%+v\n", itemListedEvent)
-	//})
-	//
-	//client.OnItemCancelled(config.AgCollections, func(response any) {
-	//	var itemCancelledEvent entity.ItemCancelledEvent
-	//	err := mapstructure.Decode(response, &itemCancelledEvent)
-	//	if err != nil {
-	//		fmt.Println("mapstructure.Decode err:", err)
-	//	}
-	//	fmt.Printf("%+v\n", itemCancelledEvent)
-	//})
+	client.OnItemListed(config.AgCollections, func(response any) {
+		var itemListedEvent entity.ItemListedEvent
+		err := mapstructure.Decode(response, &itemListedEvent)
+		if err != nil {
+			fmt.Println("mapstructure.Decode listing err:", err)
+		}
+		orderhash := itemListedEvent.Payload.OrderHash
+
+		//chainName := strings.Split(itemListedEvent.Payload.Item.NftId, "/")[0]
+		contract := strings.Split(itemListedEvent.Payload.Item.NftId, "/")[1]
+		nftID := strings.Split(itemListedEvent.Payload.Item.NftId, "/")[2]
+		owner := itemListedEvent.Payload.Maker.Address
+		listingTime, err := parseTime(itemListedEvent.Payload.ListingDate)
+		if err != nil {
+			fmt.Println("parseTime ListingDate err:", err)
+		}
+		expireTime, err := parseTime(itemListedEvent.Payload.ExpirationDate)
+		if err != nil {
+			fmt.Println("parseTime ExpirationDate err:", err)
+		}
+		err = database.AddOpenSeaOrder(orderhash, contract, owner, nftID, listingTime, expireTime)
+		if err != nil {
+			log.Fatalf("database.AddOpenSeaOrder error: %v", err)
+		}
+	})
+
+	client.OnItemCancelled(config.AgCollections, func(response any) {
+		var itemCancelledEvent entity.ItemCancelledEvent
+		err := mapstructure.Decode(response, &itemCancelledEvent)
+		if err != nil {
+			fmt.Println("mapstructure.Decode err:", err)
+		}
+		err = database.CancelOpenSeaOrder(itemCancelledEvent.Payload.OrderHash)
+		if err != nil {
+			log.Fatalf("database.CancelOpenSeaOrder error: %v", err)
+		}
+		//	fmt.Printf("%+v\n", itemCancelledEvent.Payload.OrderHash)
+	})
 
 	//client.OnItemSold("collection-slug", func(response any) {
 	//	var itemSoldEvent entity.ItemSoldEvent

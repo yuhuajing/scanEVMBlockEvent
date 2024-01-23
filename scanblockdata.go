@@ -38,7 +38,7 @@ func init() {
 func main() {
 	//go explorer.Explorer()
 	var wg sync.WaitGroup
-	wg.Add(4)
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
@@ -55,11 +55,6 @@ func main() {
 		defer wg.Done()
 		parseOpenseaOrdersByCollection()
 	}()
-
-	go func() {
-		defer wg.Done()
-		openseaorder.SubOpensea()
-	}()
 	wg.Wait()
 }
 
@@ -67,6 +62,7 @@ func parseOpenseaOrdersByCollection() {
 	for _, coll := range config.Collections {
 		openseaorder.ParseOpenseaListingByCollection(coll)
 	}
+	openseaorder.SubOpensea()
 }
 
 func parseOpenseaOrders() {
