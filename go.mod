@@ -11,6 +11,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/xiaowang7777/phx v0.0.2
 	go.mongodb.org/mongo-driver v1.13.1
+	nhooyr.io/websocket v1.8.10
 )
 
 require (

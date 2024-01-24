@@ -12,6 +12,7 @@ import (
 	"main/common/tabletypes"
 	"main/core/database"
 	"main/core/ethclientevent"
+	"main/marketorder"
 	"main/openseaorder"
 	"math/big"
 	"strings"
@@ -56,6 +57,12 @@ func main() {
 		parseOpenseaOrdersByCollection()
 	}()
 	wg.Wait()
+	//parseMarketOrders()
+}
+
+func parseMarketOrders() {
+	marketorder.ParseOrderListing()
+	//marketorder.SubOrder()
 }
 
 func parseOpenseaOrdersByCollection() {

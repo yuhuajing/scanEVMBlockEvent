@@ -313,6 +313,33 @@ func getAllIdByOwner(contractaddress, owner string) ([]int, error) {
 	return ownerids, nil
 }
 
+func AddMarketOrder(id, address, owner string, tokenId string, listTime int, expirationtime int, status, domain, name string) error {
+	tokenIDInt, _ := strconv.ParseInt(tokenId, 10, 64)
+	filter := bson.M{"id": strings.ToLower(id)}
+	err, idres := GetDocuments(config.DbcollectionMarket, filter, &tabletypes.MarketOrder{})
+	if err != nil {
+		return fmt.Errorf("AddMarketOrder:err in getting market data: %v", err)
+	}
+	if len(idres) == 0 {
+		var res = tabletypes.MarketOrder{
+			Id:             id,
+			Listingtime:    listTime,
+			Expirationtime: expirationtime,
+			Address:        strings.ToLower(address),
+			Tokenid:        int(tokenIDInt),
+			Owner:          strings.ToLower(owner),
+			Status:         status,
+			Domain:         domain,
+			Name:           name,
+		}
+		err := InsertDocument(config.DbcollectionMarket, res)
+		if err != nil {
+			return fmt.Errorf("AddMarketOrder:err in inserting marketData")
+		}
+	}
+	return nil
+}
+
 func AddOpenSeaOrder(orderhash, address, owner string, id string, listTime int, expirationtime int) error {
 	tokenIDInt, _ := strconv.ParseInt(id, 10, 64)
 	filter := bson.M{"orderhash": strings.ToLower(orderhash)}

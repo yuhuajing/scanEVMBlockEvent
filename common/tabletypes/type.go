@@ -76,3 +76,15 @@ type OpenseaOrder struct {
 	Tokenid        int    `json:"tokenid"`
 	Status         Status `json:"status"`
 }
+
+type MarketOrder struct {
+	Id             string `json:"id" gorm:"primary_key"`
+	Listingtime    int    `json:"listingtime"`
+	Expirationtime int    `json:"expirationtime"`
+	Owner          string `json:"owner"`
+	Address        string `json:"address"`
+	Tokenid        int    `json:"tokenid"`
+	Status         string `json:"status"`
+	Domain         string `json:"domain"`
+	Name           string `json:"name"`
+}

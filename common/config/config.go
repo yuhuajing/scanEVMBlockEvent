@@ -21,6 +21,7 @@ var (
 	TestColl         = "mytoken-7752"
 	StartBlockHeight = 19039000
 	OpenseaToken     = "9602c2e9de24426196b5c317099155c7"
+	MarketToken      = "e622c31f-0f5e-5dbc-a1b3-c0dc34ec4e0f"
 )
 
 var BlockWithTimestamp = make(map[uint64]uint64)
@@ -39,5 +40,7 @@ var (
 	DbcollectionOwner       = "owner"
 	DbcollectionSB          = "startblock"
 	DbcollectionOpensea     = "openseaorders"
-	Mongoclient             *mongo.Client
+	DbcollectionMarket      = "marketorders"
+
+	Mongoclient *mongo.Client
 )
