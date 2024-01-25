@@ -14,9 +14,10 @@ type Transfer struct {
 }
 
 type Startblocks struct {
-	Id          string `json:"id" gorm:"primary_key"`
-	Blocknumber uint64 `json:"blocknumber"`
-	Address     string `json:"address"`
+	Id                 string `json:"id" gorm:"primary_key"`
+	Historyblocknumber uint64 `json:"historyblocknumber"`
+	Newblocknumber     uint64 `json:"newblocknumber"`
+	Address            string `json:"address"`
 }
 
 type Approval struct {
@@ -49,6 +50,7 @@ type ApprovalForAll struct {
 type Owner struct {
 	Id          string `json:"id" gorm:"primary_key"`
 	Blocknumber uint64 `json:"blocknumber"`
+	Timestamp   uint64 `json:"timestamp"`
 	Logindex    uint   `json:"logindex"`
 	Address     string `json:"address"`
 	Owner       string `json:"owner"`

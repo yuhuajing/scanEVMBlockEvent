@@ -138,7 +138,10 @@ func ParseOpenseaListingByCollection(collection string) {
 
 	req.Header.Add("accept", "application/json")
 	req.Header.Add("x-api-key", config.OpenseaToken)
-	res, _ := http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatalf("err in Request OpenseaListingByCollection: %v", err)
+	}
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
 	var response listbycoll
@@ -301,7 +304,7 @@ func parseTime(timestr string) (int, error) {
 func HoldTime(contract, owner string) ([]int, []uint64, error) {
 	NftIds, IdTime, err := holdNFTs(contract, owner)
 	holdTime := make([]uint64, 0)
-	if err != nil {
+	if err != nil || len(NftIds) == 0 {
 		return NftIds, holdTime, err
 	}
 	timenow := uint64(time.Now().Unix())

@@ -20,32 +20,23 @@ import (
 )
 
 var (
-	headers        = make(chan *types.Header)
-	eventlogs      = make(chan []types.Log)
-	expectBlockNum = uint64(0)
-	latestblockNum = uint64(0)
-	err            error
+	headers   = make(chan *types.Header)
+	eventlogs = make(chan []types.Log)
 )
 
 func init() {
-	latestblockNum, err = config.Client.BlockNumber(context.Background())
+	latestblockNum, err := config.Client.BlockNumber(context.Background())
 	if err != nil {
 		log.Fatalf("Eth connect error:%v", err)
 	}
-	expectBlockNum = latestblockNum + 1
 
+	database.CreOrUpdateLatestBlock(latestblockNum)
 }
 
 func main() {
 	//go explorer.Explorer()
 	var wg sync.WaitGroup
-	wg.Add(3)
-
-	go func() {
-		defer wg.Done()
-		StartTimes := getStartBlockFromTable()
-		parseHistoryTx(StartTimes)
-	}()
+	wg.Add(2)
 
 	go func() {
 		defer wg.Done()
@@ -97,13 +88,14 @@ func parseOpenseaOrders() {
 }
 
 func parseHistoryTx(StartTimes [2]int) {
-	//var wg sync.WaitGroup
+	var wg sync.WaitGroup
+	latestblockNum := database.GetLatestBlockNumber()
 	for index, contract := range config.Contracts {
-		//wg.Add(1)
+		wg.Add(1)
 		tmpContract := contract
 		tmpStartTime := StartTimes[index]
 		go func(contract string, startTime int) {
-			//	defer wg.Done()
+			defer wg.Done()
 			log.Printf("parsing history with filter contracts: %s from: %d to: %d\n", contract, startTime, latestblockNum)
 			query := ethereum.FilterQuery{
 				FromBlock: big.NewInt(int64(startTime)),
@@ -112,14 +104,29 @@ func parseHistoryTx(StartTimes [2]int) {
 				Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
 			}
 			go ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
-			database.CreOrUpdateStartBlock(contract, latestblockNum)
-
 		}(tmpContract, tmpStartTime)
 	}
-	//	wg.Wait()
+	wg.Wait()
+}
+
+func DealHistoryTx() {
+	for _, contract := range config.Contracts {
+
+		startTime := database.GetStartBlockNumber(contract)
+		latestblockNum := database.GetLatestBlockNumber()
+		log.Printf("parsing history with filter contracts: %s from: %d to: %d\n", contract, startTime, latestblockNum)
+		query := ethereum.FilterQuery{
+			FromBlock: big.NewInt(int64(startTime)),
+			ToBlock:   big.NewInt(int64(latestblockNum)),
+			Addresses: []common.Address{common.HexToAddress(contract)},
+			Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
+		}
+		go ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
+	}
 }
 
 func listenBlocks() {
+	DealHistoryTx()
 	subheaders, err := config.Client.SubscribeNewHead(context.Background(), headers)
 	if err != nil {
 		log.Fatalf("Subscribe Block error: %v", err)
@@ -129,28 +136,22 @@ func listenBlocks() {
 		case err := <-subheaders.Err():
 			fmt.Errorf("Parse Block error: %v\n", err)
 		case header := <-headers:
+			latestblockNum := database.GetLatestBlockNumber()
 			if header.Number.Uint64() > latestblockNum {
+				database.CreOrUpdateLatestBlock(header.Number.Uint64())
 				log.Printf("newblocks: %d\n ", header.Number)
-				var wg sync.WaitGroup
 				for _, contract := range config.Contracts {
-					wg.Add(1)
-					tmpContract := contract
-					go func(contract string) {
-						defer wg.Done()
-						log.Printf("newblocks: %d with filter contracts: %s from: %d to: %d\n", header.Number, contract, expectBlockNum, header.Number)
-						query := ethereum.FilterQuery{
-							FromBlock: big.NewInt(int64(expectBlockNum)),
-							ToBlock:   header.Number,
-							Addresses: []common.Address{common.HexToAddress(contract)},
-							Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
-						}
-						go ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
-						database.CreOrUpdateStartBlock(contract, header.Number.Uint64())
-					}(tmpContract)
-				}
 
-				wg.Wait()
-				expectBlockNum = header.Number.Uint64() + 1
+					expectBlockNum := database.GetStartBlockNumber(contract)
+					log.Printf("newblocks: %d with filter contracts: %s from: %d to: %d\n", header.Number, contract, expectBlockNum, header.Number)
+					query := ethereum.FilterQuery{
+						FromBlock: big.NewInt(int64(expectBlockNum)),
+						ToBlock:   header.Number,
+						Addresses: []common.Address{common.HexToAddress(contract)},
+						Topics:    [][]common.Hash{{common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")}},
+					}
+					go ethclientevent.GetAllTxInfoFromEtheClient(query, eventlogs)
+				}
 			}
 		case logs := <-eventlogs:
 			ethclientevent.ParseEventLogs(logs)
@@ -169,20 +170,10 @@ func getStartBlockFromTable() [2]int {
 		}
 		if len(idres) > 0 {
 			res := idres[0].(*tabletypes.Startblocks)
-			resTime[index] = int(res.Blocknumber)
+			resTime[index] = int(res.Historyblocknumber)
 		} else {
-			resTime[index] = config.StartBlockHeight
+			resTime[index] = int(config.ContractDeployHeight[strings.ToLower(contract)])
 		}
 	}
 	return resTime
 }
-
-//transSigleToken
-//0xd9929040000000000000000000000000
-//d8b934580fce35a11b58c6d73adee468a2833fa8000000000000000000000000
-//0000000000000000000000000000000000000060000000000000000000000000
-//00000000000000000000000000000000000000e0000000000000000000000000
-//0000000000000000000000000000000000000003000000000000000000000000
-//5b38da6a701c568545dcfcb03fcb875f56beddc4000000000000000000000000
-//ab8483f64d9c6d1ecf9b849ae677dd3315835cb2000000000000000000000000
-//4b20993bc481177ec7e8f571cecae8a9e22c02db0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c8000000000000000000000000000000000000000000000000000000000000012c

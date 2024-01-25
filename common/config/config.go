@@ -15,13 +15,16 @@ var (
 		strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"): 1155,
 		strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568"): 515,
 	}
-	Collections      = []string{EfesCollections, AgCollections}
-	EfesCollections  = strings.ToLower("efesspacenation")
-	AgCollections    = strings.ToLower("alphagatespacenation")
-	TestColl         = "mytoken-7752"
-	StartBlockHeight = 19039000
-	OpenseaToken     = "9602c2e9de24426196b5c317099155c7"
-	MarketToken      = "e622c31f-0f5e-5dbc-a1b3-c0dc34ec4e0f"
+	Collections          = []string{EfesCollections, AgCollections}
+	EfesCollections      = strings.ToLower("efesspacenation")
+	AgCollections        = strings.ToLower("alphagatespacenation")
+	TestColl             = "mytoken-7752"
+	ContractDeployHeight = map[string]uint64{
+		strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"): 19081772, //18727242,
+		strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568"): 19081772, //17943453,
+	}
+	OpenseaToken = "9602c2e9de24426196b5c317099155c7"
+	MarketToken  = "e622c31f-0f5e-5dbc-a1b3-c0dc34ec4e0f"
 )
 
 var BlockWithTimestamp = make(map[uint64]uint64)
