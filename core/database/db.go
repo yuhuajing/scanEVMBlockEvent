@@ -415,7 +415,7 @@ func UpdateOpenSeaOrderByParam(address, owner string, id int) error {
 }
 
 func UpdateOpenSeaOrderByHash(orderhash string, status string) error {
-	filter := bson.M{"orderhash": strings.ToLower(orderhash)}
+	filter := bson.M{"orderhash": strings.ToLower(orderhash), "status": tabletypes.StatusListing}
 	err, idres := GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{})
 	if err != nil {
 		return fmt.Errorf("UpdateOpenSeaOrderByHash:err in getting opensea data: %v", err)
@@ -447,7 +447,7 @@ func GetOpenSeaOrders(collection string) ([]string, error) {
 }
 
 func CancelOpenSeaOrder(orderhash string) error {
-	filter := bson.M{"orderhash": strings.ToLower(orderhash)}
+	filter := bson.M{"orderhash": strings.ToLower(orderhash), "status": tabletypes.StatusListing}
 	err, idres := GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{})
 	if err != nil {
 		return fmt.Errorf("CancelOpenSeaOrder:err in getting opensea data: %v", err)
