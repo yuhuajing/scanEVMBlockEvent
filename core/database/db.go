@@ -21,9 +21,6 @@ func Insert(logdata types.Log) {
 	topic := logdata.Topics[0].Hex()
 	topicTable := config.Topic[topic]
 	timestamp := config.BlockWithTimestamp[logdata.BlockNumber]
-	if timestamp == 0 {
-		timestamp = blocktime.GetBlockTime(logdata.BlockNumber)
-	}
 	if topicTable == 1 {
 		err := InsertApprovalDB(topic, timestamp, logdata) //Approval
 		if err != nil {
@@ -77,53 +74,62 @@ func ModifyOwner(address string, id int, owner string, blockNumber, timestamp ui
 	return nil
 }
 
-func UpdateStartBlock(address string, blockNumber uint64) error {
-	filter := bson.M{"address": strings.ToLower(address)}
+func UpdateOwnerTimestamp() bool {
+	err, idres := GetDocuments(config.DbcollectionOwner, bson.M{}, &tabletypes.Owner{})
+	if err != nil {
+		return false
+	}
+	totalSupply := 0
+	for _, contract := range config.Contracts {
+		totalSupply += config.ContractSupply[strings.ToLower(contract)]
+	}
+	if len(idres) == totalSupply {
+		for _, owner := range idres {
+			res := owner.(*tabletypes.Owner)
+			if res.Timestamp == 0 {
+				timestamp := config.BlockWithTimestamp[res.Blocknumber]
+				if timestamp == 0 {
+					timestamp = blocktime.GetBlockTime(res.Blocknumber)
+					config.BlockWithTimestamp[res.Blocknumber] = timestamp
+				}
+				filter := bson.M{"address": strings.ToLower(res.Address), "owner": res.Owner, "tokenid": res.Tokenid}
+				update := bson.M{"$set": bson.M{"timestamp": timestamp}}
+				err := UpdateDocument(config.DbcollectionOwner, filter, update)
+				if err != nil {
+					return false
+				}
+			}
+		}
+		return true
+	}
+	return false
+}
+
+func CreOrUpdateStartBlock(contract string, blocknumber uint64) error {
+	filter := bson.M{"address": strings.ToLower(contract)}
 	err, idres := GetDocuments(config.DbcollectionSB, filter, &tabletypes.Startblocks{})
 	if err != nil {
 		return fmt.Errorf("InsertTransDB:err in getting Trans data: %v", err)
 	}
-	if len(idres) != 0 {
-		res := idres[0].(*tabletypes.Startblocks)
-		if int(res.Historyblocknumber) < int(blockNumber) {
-			log.Printf("UpdateStartBlock from: %d to: %d\n", res.Historyblocknumber, blockNumber)
-			filter := bson.M{"address": strings.ToLower(address)}
-			update := bson.M{"$set": bson.M{"blocknumber": blockNumber, "historyblocknumber": blockNumber}}
-			err := UpdateDocument(config.DbcollectionSB, filter, update)
-			if err != nil {
-				return fmt.Errorf("CreOrUpdateStartBlock:err in inserting")
-			}
-		}
-	}
-	return nil
-}
-
-func CreOrUpdateLatestBlock(blockNumber uint64) error {
-	err, idres := GetDocuments(config.DbcollectionSB, bson.M{}, &tabletypes.Startblocks{})
-	if err != nil {
-		return fmt.Errorf("InsertTransDB:err in getting Trans data: %v", err)
-	}
-
 	if len(idres) == 0 {
-		for _, contractaddress := range config.Contracts {
-			var res = tabletypes.Startblocks{
-				Id:                 utils.UUIDv4(),
-				Historyblocknumber: config.ContractDeployHeight[strings.ToLower(contractaddress)],
-				Newblocknumber:     blockNumber,
-				Address:            strings.ToLower(contractaddress),
-			}
-			err := InsertDocument(config.DbcollectionSB, res)
-			if err != nil {
-				return fmt.Errorf("CreOrUpdateLatestBlock:err in inserting")
-			}
+		var res = tabletypes.Startblocks{
+			Id:                 utils.UUIDv4(),
+			Historyblocknumber: blocknumber,
+			//Newblocknumber:     blockNumber,
+			Address: strings.ToLower(contract),
 		}
+		err := InsertDocument(config.DbcollectionSB, res)
+		if err != nil {
+			return fmt.Errorf("CreOrUpdateStartBlock:err in inserting")
+		}
+
 	} else {
 		res := idres[0].(*tabletypes.Startblocks)
-		if int(res.Newblocknumber) < int(blockNumber) {
-			update := bson.M{"$set": bson.M{"newblocknumber": blockNumber}}
-			err := UpdateDocument(config.DbcollectionSB, bson.M{}, update)
+		if res.Historyblocknumber < blocknumber {
+			update := bson.M{"$set": bson.M{"historyblocknumber": blocknumber}}
+			err := UpdateDocument(config.DbcollectionSB, filter, update)
 			if err != nil {
-				return fmt.Errorf("CreOrUpdateLatestBlock:err in updating")
+				return fmt.Errorf("CreOrUpdateStartBlock:err in updating")
 			}
 		}
 	}
@@ -138,14 +144,6 @@ func GetStartBlockNumber(contract string) uint64 {
 		return res.Historyblocknumber
 	}
 	return config.ContractDeployHeight[strings.ToLower(contract)]
-}
-func GetLatestBlockNumber() uint64 {
-	_, idres := GetDocuments(config.DbcollectionSB, bson.M{}, &tabletypes.Startblocks{})
-	if len(idres) != 0 {
-		res := idres[0].(*tabletypes.Startblocks)
-		return res.Newblocknumber
-	}
-	return 0
 }
 
 func InsertTransDB(topic string, timestamp uint64, logdata types.Log) error {
@@ -180,15 +178,15 @@ func InsertTransDB(topic string, timestamp uint64, logdata types.Log) error {
 		res := idres[0].(*tabletypes.Transfer)
 		timestamp = res.Timestamp
 	}
-	err = ModifyOwner(address, int(tokenIDInt), to, timestamp, logdata.BlockNumber, logdata.Index)
+	err = ModifyOwner(address, int(tokenIDInt), to, logdata.BlockNumber, timestamp, logdata.Index)
 	if err != nil {
 		return fmt.Errorf("ModifyOwner:err %v", err)
 	}
 
-	err = UpdateStartBlock(address, logdata.BlockNumber)
-	if err != nil {
-		return fmt.Errorf("CreOrUpdateStartBlock:err %v", err)
-	}
+	//err = UpdateStartBlock(address, logdata.BlockNumber)
+	//if err != nil {
+	//	return fmt.Errorf("CreOrUpdateStartBlock:err %v", err)
+	//}
 	return nil
 }
 func InsertApprovalDB(topic string, timestamp uint64, logdata types.Log) error {
@@ -221,10 +219,10 @@ func InsertApprovalDB(topic string, timestamp uint64, logdata types.Log) error {
 			return fmt.Errorf("InsertApprovalDB:err in inserting NFTApproval")
 		}
 	}
-	err = UpdateStartBlock(address, logdata.BlockNumber)
-	if err != nil {
-		return fmt.Errorf("CreOrUpdateStartBlock:err %v", err)
-	}
+	//err = UpdateStartBlock(address, logdata.BlockNumber)
+	//if err != nil {
+	//	return fmt.Errorf("CreOrUpdateStartBlock:err %v", err)
+	//}
 	return nil
 }
 func InsertApprovalAllDB(topic string, timestamp uint64, logdata types.Log) error {
@@ -254,23 +252,10 @@ func InsertApprovalAllDB(topic string, timestamp uint64, logdata types.Log) erro
 			return fmt.Errorf("InsertNFTdataDB:err in inserting NFTData")
 		}
 	}
-	err = UpdateStartBlock(address, logdata.BlockNumber)
-	if err != nil {
-		return fmt.Errorf("CreOrUpdateStartBlock:err %v", err)
-	}
-	return nil
-}
-
-func UpdateLevel(collectionname string, tokenID int, level string) error {
-	update := bson.M{"$set": bson.M{"level": level}}
-	fmt.Println(level)
-	itopkenID := strconv.FormatInt(int64(tokenID), 10)
-	fmt.Println(itopkenID)
-	filter := bson.M{"tokenID": itopkenID}
-	err := UpdateDocument(collectionname, filter, update)
-	if err != nil {
-		return fmt.Errorf("err in updating order's tx status: %v", err)
-	}
+	//err = UpdateStartBlock(address, logdata.BlockNumber)
+	//if err != nil {
+	//	return fmt.Errorf("CreOrUpdateStartBlock:err %v", err)
+	//}
 	return nil
 }
 
@@ -434,3 +419,74 @@ func CancelOpenSeaOrder(orderhash string) error {
 	}
 	return nil
 }
+
+//func UpdateLevel(collectionname string, tokenID int, level string) error {
+//	update := bson.M{"$set": bson.M{"level": level}}
+//	fmt.Println(level)
+//	itopkenID := strconv.FormatInt(int64(tokenID), 10)
+//	fmt.Println(itopkenID)
+//	filter := bson.M{"tokenID": itopkenID}
+//	err := UpdateDocument(collectionname, filter, update)
+//	if err != nil {
+//		return fmt.Errorf("err in updating order's tx status: %v", err)
+//	}
+//	return nil
+//}
+
+//func GetLatestBlockNumber() uint64 {
+//	_, idres := GetDocuments(config.DbcollectionSB, bson.M{}, &tabletypes.Startblocks{})
+//	if len(idres) != 0 {
+//		res := idres[0].(*tabletypes.Startblocks)
+//		return res.Newblocknumber
+//	}
+//	return 0
+//}
+
+//func UpdateStartBlock(address string, blockNumber uint64) error {
+//
+//	if len(idres) != 0 {
+//		res := idres[0].(*tabletypes.Startblocks)
+//		if int(res.Historyblocknumber) < int(blockNumber) {
+//			log.Printf("UpdateStartBlock from: %d to: %d\n", res.Historyblocknumber, blockNumber)
+//			filter := bson.M{"address": strings.ToLower(address)}
+//			update := bson.M{"$set": bson.M{"blocknumber": blockNumber, "historyblocknumber": blockNumber}}
+//			err := UpdateDocument(config.DbcollectionSB, filter, update)
+//			if err != nil {
+//				return fmt.Errorf("CreOrUpdateStartBlock:err in inserting")
+//			}
+//		}
+//	}
+//	return nil
+//}
+
+//func CreOrUpdateLatestBlock(blockNumber uint64) error {
+//	err, idres := GetDocuments(config.DbcollectionSB, bson.M{}, &tabletypes.Startblocks{})
+//	if err != nil {
+//		return fmt.Errorf("InsertTransDB:err in getting Trans data: %v", err)
+//	}
+//
+//	if len(idres) == 0 {
+//		for _, contractaddress := range config.Contracts {
+//			var res = tabletypes.Startblocks{
+//				Id:                 utils.UUIDv4(),
+//				Historyblocknumber: config.ContractDeployHeight[strings.ToLower(contractaddress)],
+//			//	Newblocknumber:     blockNumber,
+//				Address:            strings.ToLower(contractaddress),
+//			}
+//			err := InsertDocument(config.DbcollectionSB, res)
+//			if err != nil {
+//				return fmt.Errorf("CreOrUpdateLatestBlock:err in inserting")
+//			}
+//		}
+//	} else {
+//		res := idres[0].(*tabletypes.Startblocks)
+//		if int(res.Newblocknumber) < int(blockNumber) {
+//			update := bson.M{"$set": bson.M{"newblocknumber": blockNumber}}
+//			err := UpdateDocument(config.DbcollectionSB, bson.M{}, update)
+//			if err != nil {
+//				return fmt.Errorf("CreOrUpdateLatestBlock:err in updating")
+//			}
+//		}
+//	}
+//	return nil
+//}

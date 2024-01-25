@@ -16,8 +16,8 @@ type Transfer struct {
 type Startblocks struct {
 	Id                 string `json:"id" gorm:"primary_key"`
 	Historyblocknumber uint64 `json:"historyblocknumber"`
-	Newblocknumber     uint64 `json:"newblocknumber"`
-	Address            string `json:"address"`
+	//Newblocknumber     uint64 `json:"newblocknumber"`
+	Address string `json:"address"`
 }
 
 type Approval struct {
