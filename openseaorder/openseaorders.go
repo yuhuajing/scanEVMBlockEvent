@@ -8,10 +8,14 @@ import (
 	openseatypes "github.com/foundVanting/opensea-stream-go/types"
 	"github.com/mitchellh/mapstructure"
 	"github.com/xiaowang7777/phx"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"io"
 	"log"
 	"main/common/config"
+	"main/common/tabletypes"
 	"main/core/database"
+	"main/core/ethclientevent"
 	"math"
 	"net/http"
 	"strconv"
@@ -292,4 +296,66 @@ func parseTime(timestr string) (int, error) {
 		return 0, err
 	}
 	return int(t.Unix()), nil
+}
+
+func HoldTime(contract, owner string) ([]int, []uint64, error) {
+	NftIds, IdTime, err := holdNFTs(contract, owner)
+	holdTime := make([]uint64, 0)
+	if err != nil {
+		return NftIds, holdTime, err
+	}
+	timenow := uint64(time.Now().Unix())
+	for _, id := range NftIds {
+		filter := bson.M{"address": strings.ToLower(contract), "owner": strings.ToLower(owner), "tokenid": id, "status": tabletypes.StatusListing}
+		opts := options.Find().SetSort(bson.D{{Key: "expirationtime", Value: 1}}).SetLimit(1)
+		err, idres := database.GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{}, opts)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if len(idres) > 0 {
+			v := idres[0].(*tabletypes.OpenseaOrder)
+			if int(timenow) < v.Expirationtime {
+				holdTime = append(holdTime, 0)
+			}
+		} else {
+			holdTime = append(holdTime, timenow-IdTime[id])
+		}
+	}
+	return NftIds, holdTime, nil
+}
+
+func holdNFTs(contract, owner string) ([]int, map[int]uint64, error) {
+	NFTIds := make([]int, 0)
+	IdTime := make(map[int]uint64)
+	filter := bson.M{"address": strings.ToLower(contract), "owner": strings.ToLower(owner)}
+	err, idres := database.GetDocuments(config.DbcollectionOwner, filter, &tabletypes.Owner{})
+	if err != nil {
+		return NFTIds, IdTime, fmt.Errorf("Read ownerData err: %v", err)
+	}
+	if len(idres) > 0 {
+		for _, res := range idres {
+			v := res.(*tabletypes.Owner)
+			blocktimestamp, err := blockTimestamp(v.Blocknumber)
+			if err != nil {
+				blocktimestamp, _ = ethclientevent.ChainBlockTime(v.Blocknumber)
+			}
+			NFTIds = append(NFTIds, v.Tokenid)
+			IdTime[v.Tokenid] = blocktimestamp
+		}
+	}
+	return NFTIds, IdTime, nil
+}
+
+func blockTimestamp(blocknumber uint64) (uint64, error) {
+	filter := bson.M{"blocknumber": blocknumber}
+	opts := options.Find().SetLimit(1)
+	err, idres := database.GetDocuments(config.DbcollectionTrans, filter, &tabletypes.Transfer{}, opts)
+	if err != nil {
+		return 0, fmt.Errorf("Read transData err: %v", err)
+	}
+	if len(idres) > 0 {
+		res := idres[0].(*tabletypes.Transfer)
+		return res.Timestamp, nil
+	}
+	return 0, fmt.Errorf("No Block Data: %v", err)
 }
