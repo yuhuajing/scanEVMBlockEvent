@@ -388,6 +388,7 @@ func AddOpenSeaOrder(orderhash, address, owner, id string, listTime int, expirat
 			Tokenid:        int(tokenIDInt),
 			Owner:          strings.ToLower(owner),
 			Status:         tabletypes.StatusListing,
+			Collection:     config.Collections[strings.ToLower(address)],
 		}
 		err := InsertDocument(config.DbcollectionOpensea, res)
 		if err != nil {
@@ -429,9 +430,9 @@ func UpdateOpenSeaOrderByHash(orderhash string, status string) error {
 	return nil
 }
 
-func GetOpenSeaOrders() ([]string, error) {
+func GetOpenSeaOrders(collection string) ([]string, error) {
 	orderhashs := make([]string, 0)
-	err, idres := GetDocuments(config.DbcollectionOpensea, bson.M{}, &tabletypes.OpenseaOrder{})
+	err, idres := GetDocuments(config.DbcollectionOpensea, bson.M{"status": tabletypes.StatusListing, "collection": collection}, &tabletypes.OpenseaOrder{})
 	if err != nil {
 		return orderhashs, fmt.Errorf("GetOpenSeaOrders:err in getting opensea data: %v", err)
 	}

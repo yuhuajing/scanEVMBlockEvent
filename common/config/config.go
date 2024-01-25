@@ -15,7 +15,11 @@ var (
 		strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"): 1155,
 		strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568"): 515,
 	}
-	Collections          = []string{EfesCollections, AgCollections}
+	Collections = map[string]string{
+		strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"): EfesCollections,
+		strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568"): AgCollections,
+	}
+	//Collections          = []string{EfesCollections, AgCollections}
 	EfesCollections      = strings.ToLower("efesspacenation")
 	AgCollections        = strings.ToLower("alphagatespacenation")
 	TestColl             = "mytoken-7752"

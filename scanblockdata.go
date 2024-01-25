@@ -12,8 +12,8 @@ import (
 	"main/core/ethclientevent"
 	"main/openseaorder"
 	"math/big"
+	"strings"
 	"sync"
-	"time"
 )
 
 var (
@@ -52,9 +52,9 @@ func main() {
 
 	wg.Wait()
 	//parseMarketOrders()
-	//ids, holdTime, _ := openseaorder.HoldTime(config.Contracts[0], "0xcfc487d3ab26228ebafc008d1de426e27ce3d201")
-	//fmt.Println(ids)
-	//fmt.Println(holdTime)
+	ids, holdTime, _ := openseaorder.HoldTime(config.Contracts[1], "0x1f74bdcc20427f28d06c647759200badf0aaee92")
+	fmt.Println(ids)
+	fmt.Println(holdTime)
 }
 
 func listenBlocks() {
@@ -91,7 +91,8 @@ func listenBlocks() {
 }
 
 func parseOpenseaOrdersByCollection() {
-	for _, coll := range config.Collections {
+	for _, contract := range config.Contracts {
+		coll := config.Collections[strings.ToLower(contract)]
 		log.Printf("parsing opensea orders with collection: %s", coll)
 		openseaorder.CreatOrUpdateOpenseaListingByhash(coll)
 	}
@@ -99,7 +100,7 @@ func parseOpenseaOrdersByCollection() {
 }
 
 func updateOwnerTimestamp() {
-	time.Sleep(30 * time.Second)
+	//time.Sleep(30 * time.Second)
 	for {
 		if database.UpdateOwnerTimestamp() {
 			break

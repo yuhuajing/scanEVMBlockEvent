@@ -77,6 +77,7 @@ type OpenseaOrder struct {
 	Address        string `json:"address"`
 	Tokenid        int    `json:"tokenid"`
 	Status         string `json:"status"`
+	Collection     string `json:"collection"`
 }
 
 type MarketOrder struct {

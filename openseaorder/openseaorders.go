@@ -15,7 +15,6 @@ import (
 	"main/common/config"
 	"main/common/tabletypes"
 	"main/core/database"
-	"main/core/ethclientevent"
 	"math"
 	"net/http"
 	"strconv"
@@ -129,11 +128,11 @@ type listbycoll struct {
 }
 
 func CreatOrUpdateOpenseaListingByhash(collection string) {
-	listingOrdersFromDB, _ := database.GetOpenSeaOrders()
+	listingOrdersFromDB, _ := database.GetOpenSeaOrders(collection)
 	openseaListingOrders := ParseOpenseaListingByCollection(collection)
 	listingOrdersFromOpensea := make(map[string]bool)
 	for _, order := range openseaListingOrders.Listings {
-		listingOrdersFromOpensea[order.OrderHash] = true
+		listingOrdersFromOpensea[strings.ToLower(order.OrderHash)] = true
 		startTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.StartTime, 10, 64)
 		endTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.EndTime, 10, 64)
 		err := database.AddOpenSeaOrder(order.OrderHash, order.ProtocolData.Parameters.Offer[0].Token, order.ProtocolData.Parameters.Offerer, order.ProtocolData.Parameters.Offer[0].IdentifierOrCriteria, int(startTime), int(endTime))
@@ -143,7 +142,7 @@ func CreatOrUpdateOpenseaListingByhash(collection string) {
 	}
 	if len(listingOrdersFromDB) > 0 {
 		for _, hash := range listingOrdersFromDB {
-			if !listingOrdersFromOpensea[hash] {
+			if !listingOrdersFromOpensea[strings.ToLower(hash)] {
 				database.UpdateOpenSeaOrderByHash(hash, tabletypes.StatusInvalid)
 			}
 		}
@@ -189,8 +188,6 @@ func SubOpensea() {
 			fmt.Println("mapstructure.Decode listing err:", err)
 		}
 		orderhash := itemListedEvent.Payload.OrderHash
-
-		//chainName := strings.Split(itemListedEvent.Payload.Item.NftId, "/")[0]
 		contract := strings.Split(itemListedEvent.Payload.Item.NftId, "/")[1]
 		nftID := strings.Split(itemListedEvent.Payload.Item.NftId, "/")[2]
 		owner := itemListedEvent.Payload.Maker.Address
@@ -331,7 +328,7 @@ func HoldTime(contract, owner string) ([]int, []uint64, error) {
 		}
 		if len(idres) > 0 {
 			v := idres[0].(*tabletypes.OpenseaOrder)
-			if int(timenow) < v.Expirationtime {
+			if int(timenow) > v.Expirationtime {
 				holdTime = append(holdTime, 0)
 			}
 		} else {
@@ -352,12 +349,12 @@ func holdNFTs(contract, owner string) ([]int, map[int]uint64, error) {
 	if len(idres) > 0 {
 		for _, res := range idres {
 			v := res.(*tabletypes.Owner)
-			blocktimestamp, err := blockTimestamp(v.Blocknumber)
-			if err != nil {
-				blocktimestamp, _ = ethclientevent.ChainBlockTime(v.Blocknumber)
-			}
+			//blocktimestamp, err := blockTimestamp(v.Blocknumber)
+			//if err != nil {
+			//	blocktimestamp, _ = ethclientevent.ChainBlockTime(v.Blocknumber)
+			//}
 			NFTIds = append(NFTIds, v.Tokenid)
-			IdTime[v.Tokenid] = blocktimestamp
+			IdTime[v.Tokenid] = v.Timestamp
 		}
 	}
 	return NFTIds, IdTime, nil
