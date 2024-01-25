@@ -58,6 +58,10 @@ func main() {
 	}()
 	wg.Wait()
 	//parseMarketOrders()
+
+	//ids, holdTime, _ := openseaorder.HoldTime(config.Contracts[0], "0xcfc487d3ab26228ebafc008d1de426e27ce3d201")
+	//fmt.Println(ids)
+	//fmt.Println(holdTime)
 }
 
 func parseMarketOrders() {
