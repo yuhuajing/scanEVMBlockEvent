@@ -129,6 +129,7 @@ type listbycoll struct {
 }
 
 func CreatOrUpdateOpenseaListingByhash(collection string) {
+	listingOrdersFromDB, _ := database.GetOpenSeaOrders()
 	openseaListingOrders := ParseOpenseaListingByCollection(collection)
 	listingOrdersFromOpensea := make(map[string]bool)
 	for _, order := range openseaListingOrders.Listings {
@@ -140,10 +141,11 @@ func CreatOrUpdateOpenseaListingByhash(collection string) {
 			log.Fatalf("database.AddOpenSeaOrder error: %v", err)
 		}
 	}
-	listingOrdersFromDB, _ := database.GetOpenSeaOrders()
-	for _, hash := range listingOrdersFromDB {
-		if listingOrdersFromOpensea[hash] {
-			database.UpdateOpenSeaOrderByHash(hash, tabletypes.StatusInvalid)
+	if len(listingOrdersFromDB) > 0 {
+		for _, hash := range listingOrdersFromDB {
+			if !listingOrdersFromOpensea[hash] {
+				database.UpdateOpenSeaOrderByHash(hash, tabletypes.StatusInvalid)
+			}
 		}
 	}
 }
@@ -169,17 +171,6 @@ func ParseOpenseaListingByCollection(collection string) *listbycoll {
 		log.Fatalf("unmarshal opensea data error: %v", err)
 	}
 	return &response
-	//orderhashs := make([]string, 0)
-	//for _, order := range response.Listings {
-	//	//startTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.StartTime, 10, 64)
-	//	//endTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.EndTime, 10, 64)
-	//	//err = database.AddOpenSeaOrder(order.OrderHash, order.ProtocolData.Parameters.Offer[0].Token, order.ProtocolData.Parameters.Offerer, order.ProtocolData.Parameters.Offer[0].IdentifierOrCriteria, int(startTime), int(endTime))
-	//	//if err != nil {
-	//	//	log.Fatalf("database.AddOpenSeaOrder error: %v", err)
-	//	//}
-	//	orderhashs = append(orderhashs, order.OrderHash)
-	//}
-	//return orderhashs
 }
 
 func SubOpensea() {
