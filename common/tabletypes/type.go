@@ -57,15 +57,15 @@ type Owner struct {
 	Tokenid     int    `json:"tokenid"`
 }
 
-type Status string
-
 const (
 	//StatusUnknown is a Status of type unknown.
-	StatusUnknown Status = ""
+	StatusUnknown string = ""
 	//StatusListing is a Status of type listing.
-	StatusListing Status = "listing"
+	StatusListing string = "listing"
 	//StatusCancel is a Status of type cancel.
-	StatusCancel Status = "cancel"
+	StatusCancel  string = "cancel"
+	StatusSold    string = "sold"
+	StatusInvalid string = "invalid"
 )
 
 type OpenseaOrder struct {
@@ -76,7 +76,7 @@ type OpenseaOrder struct {
 	Owner          string `json:"owner"`
 	Address        string `json:"address"`
 	Tokenid        int    `json:"tokenid"`
-	Status         Status `json:"status"`
+	Status         string `json:"status"`
 }
 
 type MarketOrder struct {

@@ -128,14 +128,33 @@ type listbycoll struct {
 	} `json:"listings"`
 }
 
-func ParseOpenseaListingByCollection(collection string) {
+func CreatOrUpdateOpenseaListingByhash(collection string) {
+	openseaListingOrders := ParseOpenseaListingByCollection(collection)
+	listingOrdersFromOpensea := make(map[string]bool)
+	for _, order := range openseaListingOrders.Listings {
+		listingOrdersFromOpensea[order.OrderHash] = true
+		startTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.StartTime, 10, 64)
+		endTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.EndTime, 10, 64)
+		err := database.AddOpenSeaOrder(order.OrderHash, order.ProtocolData.Parameters.Offer[0].Token, order.ProtocolData.Parameters.Offerer, order.ProtocolData.Parameters.Offer[0].IdentifierOrCriteria, int(startTime), int(endTime))
+		if err != nil {
+			log.Fatalf("database.AddOpenSeaOrder error: %v", err)
+		}
+	}
+	listingOrdersFromDB, _ := database.GetOpenSeaOrders()
+	for _, hash := range listingOrdersFromDB {
+		if listingOrdersFromOpensea[hash] {
+			database.UpdateOpenSeaOrderByHash(hash, tabletypes.StatusInvalid)
+		}
+	}
+}
+
+func ParseOpenseaListingByCollection(collection string) *listbycoll {
 	openseaUrl := "https://api.opensea.io/api/v2/listings/collection/%s/all"
 	url := fmt.Sprintf(openseaUrl, collection)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Fatalf("err in ParseOpenseaListingByCollection: %v", err)
 	}
-
 	req.Header.Add("accept", "application/json")
 	req.Header.Add("x-api-key", config.OpenseaToken)
 	res, err := http.DefaultClient.Do(req)
@@ -149,14 +168,18 @@ func ParseOpenseaListingByCollection(collection string) {
 	if err != nil {
 		log.Fatalf("unmarshal opensea data error: %v", err)
 	}
-	for _, order := range response.Listings {
-		startTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.StartTime, 10, 64)
-		endTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.EndTime, 10, 64)
-		err = database.AddOpenSeaOrder(order.OrderHash, order.ProtocolData.Parameters.Offer[0].Token, order.ProtocolData.Parameters.Offerer, order.ProtocolData.Parameters.Offer[0].IdentifierOrCriteria, int(startTime), int(endTime))
-		if err != nil {
-			log.Fatalf("database.AddOpenSeaOrder error: %v", err)
-		}
-	}
+	return &response
+	//orderhashs := make([]string, 0)
+	//for _, order := range response.Listings {
+	//	//startTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.StartTime, 10, 64)
+	//	//endTime, _ := strconv.ParseInt(order.ProtocolData.Parameters.EndTime, 10, 64)
+	//	//err = database.AddOpenSeaOrder(order.OrderHash, order.ProtocolData.Parameters.Offer[0].Token, order.ProtocolData.Parameters.Offerer, order.ProtocolData.Parameters.Offer[0].IdentifierOrCriteria, int(startTime), int(endTime))
+	//	//if err != nil {
+	//	//	log.Fatalf("database.AddOpenSeaOrder error: %v", err)
+	//	//}
+	//	orderhashs = append(orderhashs, order.OrderHash)
+	//}
+	//return orderhashs
 }
 
 func SubOpensea() {

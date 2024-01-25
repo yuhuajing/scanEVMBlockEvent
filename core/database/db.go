@@ -69,6 +69,10 @@ func ModifyOwner(address string, id int, owner string, blockNumber, timestamp ui
 			if err != nil {
 				return fmt.Errorf("InsertNFTdataDB:err in inserting NFTData")
 			}
+			err = UpdateOpenSeaOrderByParam(address, owner, id)
+			if err != nil {
+				return fmt.Errorf("UpdateOpenSeaOrderByParam:err in updating openseaOrders")
+			}
 		}
 	}
 	return nil
@@ -182,7 +186,6 @@ func InsertTransDB(topic string, timestamp uint64, logdata types.Log) error {
 	if err != nil {
 		return fmt.Errorf("ModifyOwner:err %v", err)
 	}
-
 	//err = UpdateStartBlock(address, logdata.BlockNumber)
 	//if err != nil {
 	//	return fmt.Errorf("CreOrUpdateStartBlock:err %v", err)
@@ -368,7 +371,7 @@ func AddMarketOrder(id, address, owner string, tokenId string, listTime int, exp
 	return nil
 }
 
-func AddOpenSeaOrder(orderhash, address, owner string, id string, listTime int, expirationtime int) error {
+func AddOpenSeaOrder(orderhash, address, owner, id string, listTime int, expirationtime int) error {
 	tokenIDInt, _ := strconv.ParseInt(id, 10, 64)
 	filter := bson.M{"orderhash": strings.ToLower(orderhash)}
 	err, idres := GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{})
@@ -391,17 +394,55 @@ func AddOpenSeaOrder(orderhash, address, owner string, id string, listTime int, 
 			return fmt.Errorf("AddOpenSeaOrder:err in inserting openseaData")
 		}
 	}
-	//else {
-	//	res := idres[0].(*tabletypes.OpenseaOrder)
-	//	if res.Listingtime < listTime {
-	//		update := bson.M{"$set": bson.M{"listingtime": listTime, "expirationtime": expirationtime, "orderhash": orderhash}}
-	//		err := UpdateDocument(config.DbcollectionOpensea, filter, update)
-	//		if err != nil {
-	//			return fmt.Errorf("UpdateOpenSeaOrder:err in updating openseaData")
-	//		}
-	//	}
-	//}
 	return nil
+}
+
+func UpdateOpenSeaOrderByParam(address, owner string, id int) error {
+	filter := bson.M{"address": strings.ToLower(address), "owner": strings.ToLower(owner), "tokenid": id}
+	err, idres := GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{})
+	if err != nil {
+		return fmt.Errorf("UpdateOpenSeaOrderByHash:err in getting opensea data: %v", err)
+	}
+	if len(idres) != 0 {
+		update := bson.M{"$set": bson.M{"status": tabletypes.StatusSold}}
+		err := UpdateDocument(config.DbcollectionOpensea, filter, update)
+		if err != nil {
+			return fmt.Errorf("UpdateOpenSeaOrder:err in updating openseaData")
+		}
+	}
+	return nil
+}
+
+func UpdateOpenSeaOrderByHash(orderhash string, status string) error {
+	filter := bson.M{"orderhash": strings.ToLower(orderhash)}
+	err, idres := GetDocuments(config.DbcollectionOpensea, filter, &tabletypes.OpenseaOrder{})
+	if err != nil {
+		return fmt.Errorf("UpdateOpenSeaOrderByHash:err in getting opensea data: %v", err)
+	}
+	if len(idres) != 0 {
+		update := bson.M{"$set": bson.M{"status": status}}
+		err := UpdateDocument(config.DbcollectionOpensea, filter, update)
+		if err != nil {
+			return fmt.Errorf("UpdateOpenSeaOrder:err in updating openseaData")
+		}
+	}
+	return nil
+}
+
+func GetOpenSeaOrders() ([]string, error) {
+	orderhashs := make([]string, 0)
+	err, idres := GetDocuments(config.DbcollectionOpensea, bson.M{}, &tabletypes.OpenseaOrder{})
+	if err != nil {
+		return orderhashs, fmt.Errorf("GetOpenSeaOrders:err in getting opensea data: %v", err)
+	}
+	if len(idres) != 0 {
+		for _, v := range idres {
+			res := v.(*tabletypes.OpenseaOrder)
+			orderhashs = append(orderhashs, res.Orderhash)
+		}
+		return orderhashs, nil
+	}
+	return orderhashs, fmt.Errorf("No opensea data: %v", err)
 }
 
 func CancelOpenSeaOrder(orderhash string) error {

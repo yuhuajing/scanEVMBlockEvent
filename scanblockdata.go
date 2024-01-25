@@ -93,7 +93,7 @@ func listenBlocks() {
 func parseOpenseaOrdersByCollection() {
 	for _, coll := range config.Collections {
 		log.Printf("parsing opensea orders with collection: %s", coll)
-		openseaorder.ParseOpenseaListingByCollection(coll)
+		openseaorder.CreatOrUpdateOpenseaListingByhash(coll)
 	}
 	openseaorder.SubOpensea()
 }
