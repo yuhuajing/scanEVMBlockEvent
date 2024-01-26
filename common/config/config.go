@@ -9,23 +9,24 @@ import (
 var (
 	EthServer = "wss://eth-mainnet.g.alchemy.com/v2/cnkFUCDI1vY0c2Xg8aUmSjaK73tIveHy" //"https://eth-mainnet.g.alchemy.com/v2/cnkFUCDI1vY0c2Xg8aUmSjaK73tIveHy"
 	Client    = ethconn.ConnBlockchain(EthServer)
-	//Ethereum Mainnet
-	Contracts      = []string{strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"), strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568")}
-	ContractSupply = map[string]int{
-		strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"): 1155,
-		strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568"): 515,
+
+	//Collections          = []string{EfesCollections, AgCollections}
+	EfesCollections = strings.ToLower("efesspacenation")
+	AgCollections   = strings.ToLower("alphagatespacenation")
+	EfesContract    = strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c")
+	AgContract      = strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568")
+	Contracts       = []string{EfesContract, AgContract}
+	ContractSupply  = map[string]int{
+		EfesContract: 1155,
+		AgContract:   515,
 	}
 	Collections = map[string]string{
-		strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"): EfesCollections,
-		strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568"): AgCollections,
+		EfesContract: EfesCollections,
+		AgContract:   AgCollections,
 	}
-	//Collections          = []string{EfesCollections, AgCollections}
-	EfesCollections      = strings.ToLower("efesspacenation")
-	AgCollections        = strings.ToLower("alphagatespacenation")
-	TestColl             = "mytoken-7752"
 	ContractDeployHeight = map[string]uint64{
-		strings.ToLower("0x1aae1A668c92Eb411eAfD80DD0c60ca67ad17a1c"): 18727242,
-		strings.ToLower("0xff2B4721F997c242fF406a626f17df083Bd2C568"): 17943453,
+		EfesContract: 18727242,
+		AgContract:   17943453,
 	}
 	OpenseaToken = "9602c2e9de24426196b5c317099155c7"
 	MarketToken  = "e622c31f-0f5e-5dbc-a1b3-c0dc34ec4e0f"
@@ -51,6 +52,3 @@ var (
 
 	Mongoclient *mongo.Client
 )
-
-//0x000
-//
