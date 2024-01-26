@@ -94,7 +94,7 @@ func UpdateOwnerTimestamp() bool {
 				timestamp := config.BlockWithTimestamp[res.Blocknumber]
 				if timestamp == 0 {
 					timestamp = blocktime.GetBlockTime(res.Blocknumber)
-					config.BlockWithTimestamp[res.Blocknumber] = timestamp
+					//config.BlockWithTimestamp[res.Blocknumber] = timestamp
 				}
 				filter := bson.M{"address": strings.ToLower(res.Address), "owner": res.Owner, "tokenid": res.Tokenid}
 				update := bson.M{"$set": bson.M{"timestamp": timestamp}}

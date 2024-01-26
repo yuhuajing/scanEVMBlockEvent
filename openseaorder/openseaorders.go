@@ -332,7 +332,11 @@ func HoldTime(contract, owner string) ([]int, []uint64, error) {
 				holdTime = append(holdTime, 0)
 			}
 		} else {
-			holdTime = append(holdTime, timenow-IdTime[id])
+			if IdTime[id] > 0 {
+				holdTime = append(holdTime, timenow-IdTime[id])
+			} else {
+				holdTime = append(holdTime, 0)
+			}
 		}
 	}
 	return NftIds, holdTime, nil
