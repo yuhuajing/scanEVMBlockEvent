@@ -52,9 +52,9 @@ func main() {
 
 	wg.Wait()
 	//parseMarketOrders()
-	ids, holdTime, _ := openseaorder.HoldTime(config.Contracts[1], "0x1f74bdcc20427f28d06c647759200badf0aaee92")
-	fmt.Println(ids)
-	fmt.Println(holdTime)
+	//ids, holdTime, _ := openseaorder.HoldTime(config.Contracts[1], "0x08d8db85ad681fa6a80c0d1fab9312f00d1a1888")
+	//fmt.Println(ids)
+	//fmt.Println(holdTime)
 }
 
 func listenBlocks() {
