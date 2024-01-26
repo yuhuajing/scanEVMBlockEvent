@@ -151,13 +151,25 @@ func CreatOrUpdateOpenseaListingByhash(collection string) {
 
 func ParseOpenseaListingByCollection(collection string) *listbycoll {
 	openseaUrl := "https://api.opensea.io/api/v2/listings/collection/%s/all"
-	url := fmt.Sprintf(openseaUrl, collection)
-	req, err := http.NewRequest("GET", url, nil)
+	openseaUrl = fmt.Sprintf(openseaUrl, collection)
+	req, err := http.NewRequest("GET", openseaUrl, nil)
 	if err != nil {
 		log.Fatalf("err in ParseOpenseaListingByCollection: %v", err)
 	}
 	req.Header.Add("accept", "application/json")
 	req.Header.Add("x-api-key", config.OpenseaToken)
+	//proxyURL, err := url.Parse("http://127.0.0.1:59527")
+	//if err != nil {
+	//	log.Error().Msgf("Failed to parse proxy URL: %v", err)
+	//}
+	//transport := &http.Transport{
+	//	Proxy: http.ProxyURL(proxyURL),
+	//}
+	//client := &http.Client{
+	//	Transport: transport,
+	//}
+	//res, err := client.Do(req)
+
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatalf("err in Request OpenseaListingByCollection: %v", err)
