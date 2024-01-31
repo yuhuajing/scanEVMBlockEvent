@@ -123,10 +123,10 @@ func ModifyOwner(address string, id int, owner string, blockNumber, timestamp ui
 }
 
 func UpdateOwner(address string) error {
-	filter := bson.M{"address": strings.ToLower(address)}
 	totalSupply := config.ContractSupply[strings.ToLower(address)]
 	for i := 0; i < totalSupply; i++ {
 		level := DoMetaDataReq(address, i)
+		filter := bson.M{"tokenid": i, "address": strings.ToLower(address)}
 		update := bson.M{"$set": bson.M{"level": level}}
 		err := UpdateDocument(config.DbcollectionOwner, filter, update)
 		if err != nil {
