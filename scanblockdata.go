@@ -13,7 +13,6 @@ import (
 	"main/openseaorder"
 	"math/big"
 	"strings"
-	"sync"
 )
 
 var (
@@ -32,29 +31,34 @@ var (
 
 func main() {
 	//go explorer.Explorer()
-	var wg sync.WaitGroup
-	wg.Add(3)
+	//var wg sync.WaitGroup
+	//wg.Add(3)
+	//
+	//go func() {
+	//	defer wg.Done()
+	//	listenBlocks()
+	//}()
+	//
+	//go func() {
+	//	defer wg.Done()
+	//	parseOpenseaOrdersByCollection()
+	//}()
+	//
+	//go func() {
+	//	defer wg.Done()
+	//	updateOwnerTimestamp()
+	//}()
+	//
+	//wg.Wait()
 
-	go func() {
-		defer wg.Done()
-		listenBlocks()
-	}()
-
-	go func() {
-		defer wg.Done()
-		parseOpenseaOrdersByCollection()
-	}()
-
-	go func() {
-		defer wg.Done()
-		updateOwnerTimestamp()
-	}()
-
-	wg.Wait()
 	//parseMarketOrders()
 	//ids, holdTime, _ := openseaorder.HoldTime(config.Contracts[1], "0x08d8db85ad681fa6a80c0d1fab9312f00d1a1888")
 	//fmt.Println(ids)
 	//fmt.Println(holdTime)
+	//database.UpdateOwner("0x1aae1a668c92eb411eafd80dd0c60ca67ad17a10")
+	for _, contract := range config.Contracts {
+		database.UpdateOwner(contract)
+	}
 }
 
 func listenBlocks() {

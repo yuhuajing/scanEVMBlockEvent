@@ -122,6 +122,20 @@ func ModifyOwner(address string, id int, owner string, blockNumber, timestamp ui
 	return nil
 }
 
+func UpdateOwner(address string) error {
+	filter := bson.M{"address": strings.ToLower(address)}
+	totalSupply := config.ContractSupply[strings.ToLower(address)]
+	for i := 0; i < totalSupply; i++ {
+		level := DoMetaDataReq(address, i)
+		update := bson.M{"$set": bson.M{"level": level}}
+		err := UpdateDocument(config.DbcollectionOwner, filter, update)
+		if err != nil {
+			return fmt.Errorf("InsertNFTdataDB:err in inserting NFTData")
+		}
+	}
+	return nil
+}
+
 func UpdateOwnerTimestamp() bool {
 	err, idres := GetDocuments(config.DbcollectionOwner, bson.M{}, &tabletypes.Owner{})
 	if err != nil {
