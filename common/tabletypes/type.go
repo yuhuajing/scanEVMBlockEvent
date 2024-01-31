@@ -55,6 +55,7 @@ type Owner struct {
 	Address     string `json:"address"`
 	Owner       string `json:"owner"`
 	Tokenid     int    `json:"tokenid"`
+	Level       string `json:"level"`
 }
 
 const (

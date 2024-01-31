@@ -24,6 +24,11 @@ var (
 		EfesContract: EfesCollections,
 		AgContract:   AgCollections,
 	}
+
+	Metadata = map[string]string{
+		EfesContract: "https://metadata.spacenation.online/spaceship/efes/%d.json",
+		AgContract:   "https://metadata.spacenation.online/alpha-gate/%d.json",
+	}
 	ContractDeployHeight = map[string]uint64{
 		EfesContract: 18727242,
 		AgContract:   17943453,

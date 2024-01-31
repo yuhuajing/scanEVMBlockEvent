@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/gofiber/fiber/v2/utils"
@@ -12,9 +13,11 @@ import (
 	"main/common/dbconn"
 	"main/common/tabletypes"
 	"main/core/blocktime"
+	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func Insert(logdata types.Log) {
@@ -39,13 +42,53 @@ func Insert(logdata types.Log) {
 	}
 }
 
+type AlphaGate struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	ExternalURL string      `json:"external_url"`
+	TokenID     int         `json:"tokenId"`
+	Image       string      `json:"image"`
+	Attributes  []Attribute `json:"attributes"`
+}
+
+type Attribute struct {
+	TraitType string `json:"trait_type"`
+	Value     string `json:"value"`
+}
+
+func DoMetaDataReq(address string, tokenId int) string {
+	if strings.ToLower(address) == config.EfesContract {
+		return ""
+	}
+	metadataUrl := fmt.Sprintf(config.Metadata[strings.ToLower(address)], tokenId)
+	req, _ := http.NewRequest("GET", metadataUrl, nil)
+	client := &http.Client{Timeout: time.Minute * 1}
+	resp, err := client.Do(req)
+	for err != nil {
+		log.Fatalf("get request failed: %s", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal(err)
+	}
+
+	blocks := AlphaGate{}
+	err = json.NewDecoder(resp.Body).Decode(&blocks)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return blocks.Attributes[0].Value
+}
+
 func ModifyOwner(address string, id int, owner string, blockNumber, timestamp uint64, logIndex uint) error {
 	filter := bson.M{"tokenid": id, "address": strings.ToLower(address)}
 	err, idres := GetDocuments(config.DbcollectionOwner, filter, &tabletypes.Owner{})
 	if err != nil {
 		return fmt.Errorf("InsertTransDB:err in getting Trans data: %v", err)
 	}
+
 	if len(idres) == 0 {
+		level := DoMetaDataReq(address, id)
 		var res = tabletypes.Owner{
 			Id:          utils.UUIDv4(),
 			Blocknumber: blockNumber,
@@ -54,6 +97,7 @@ func ModifyOwner(address string, id int, owner string, blockNumber, timestamp ui
 			Tokenid:     id,
 			Owner:       strings.ToLower(owner),
 			Logindex:    logIndex,
+			Level:       level,
 		}
 		err := InsertDocument(config.DbcollectionOwner, res)
 		if err != nil {
