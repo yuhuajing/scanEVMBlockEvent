@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=9; IE=8; IE=7; IE=EDGE">
+    <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7"/>
+    <title>杂粮追溯--监管部门登录页面</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <link rel="stylesheet" type="text/css" href="css/webbase.css"/>
+    <link rel="stylesheet" type="text/css" href="css/pages-login.css"/>
+</head>
+
+<body>
+<div class="login-box">
+    <!--head-->
+    <div class="py-container logoArea">
+        <a href="" class="logo"></a>
+    </div>
+    <!--loginArea-->
+    <div class="loginArea" id="loginApp">
+        <div class="py-container login">
+            <div class="loginform">
+                <ul class="sui-nav nav-tabs tab-wraped">
+
+                    <li class="active">
+                        <a href="#profile" data-toggle="tab">
+                            <h3>登录监管用户账号(追溯数据查询)</h3>
+                        </a>
+                    </li>
+                </ul>
+                <div class="tab-content tab-wraped">
+
+                    <div id="profile" class="tab-pane  active">
+                        <span v-text="msg"></span>
+                        <form method="POST" action="/" class="sui-form">
+                            <div class="input-prepend"><span class="add-on loginname"></span>
+                                <input id="username" type="text" name = "username" placeholder="用户名/手机号" class="span2 input-xfat"
+                                       v-model="form.username">
+                            </div>
+                            <div class="input-prepend"><span class="add-on loginpwd"></span>
+                                <input id="password" type="password"  name = "password" placeholder="请输入密码" class="span2 input-xfat"
+                                       v-model="form.password">
+                            </div>
+                            <div class="setting">
+                                <label class="checkbox inline">
+                                    <input name="m1" type="checkbox" value="2" checked="">
+                                    自动登录
+                                </label>
+                                <span class="forget">点击<a href="">这里</a>重置您的密码</span>
+                            </div>
+                            <div class="logined">
+                                <!-- <a class="sui-btn btn-block btn-xlarge btn-danger" @click="login"
+                                   href="zhuisujianguan.html">登&nbsp;&nbsp;录</a> -->
+                                <input type="submit" value="登录" />
+                            </div>
+                            <div class="setting">
+                                <span class="forget">监管部门|追溯企业？<a href="http://39.100.147.254:8080/#/login?redirect=%2Fbaas%2Findex">控制台登录</a></span>
+                            </div>
+                            <div class="setting">
+                                <span class="forget">还没有账号？<a href="register-geren.html">注册一个账号</a></span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--foot-->
+    <div style="background: #acacac">
+        <div class="main">
+            <div id="footer" class="wrapper">
+                <p>
+                    <a href="">首页</a>
+                    | <a href="">加入我们</a>
+                    | <a href="">合作及洽谈</a>
+                    | <a href="">联系我们</a>
+                    | <a href="https://blog.csdn.net/weixin_41303815/category_10971124.html?spm=1001.2014.3001.5482">博客资料</a>
+                </p>
+                版权所有  农产品质量安全追溯技术及应用国家工程实验室© 2019-2022 All rights reserved <br>
+                National Engineering Laboratory for Quality and Safety Traceability Technology and Application of Agricultural Products <br>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+</html>

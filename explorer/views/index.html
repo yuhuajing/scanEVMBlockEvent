@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Table Example</title>
+</head>
+<body>
+    <h1>Data Table</h1>
+    <table border="1">
+        <tr>
+            <th>Owner</th>
+            <th>Token ID</th>
+            <th>Token ID</th>
+        </tr>
+       {{ range .Data }}
+        <tr>
+            <td>{{ .Id }}</td>
+            <td>{{ .Historyblocknumber }}</td>
+            <td>{{ .Address }}</td>
+        </tr>
+        {{ end }}
+
+    </table>
+</body>
+</html>

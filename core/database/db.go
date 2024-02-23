@@ -198,6 +198,24 @@ func CreOrUpdateStartBlock(contract string, blocknumber uint64) error {
 	return nil
 }
 
+func QueryStartBlock() []*tabletypes.Startblocks {
+	filter := bson.M{}
+	err, idres := GetDocuments(config.DbcollectionSB, filter, &tabletypes.Startblocks{})
+	if err != nil {
+		fmt.Errorf("InsertTransDB:err in getting Trans data: %v", err)
+		return nil
+	}
+	if len(idres) != 0 {
+		resdata := make([]*tabletypes.Startblocks, 0)
+		for _, data := range idres {
+			res := data.(*tabletypes.Startblocks)
+			resdata = append(resdata, res)
+		}
+		return resdata
+	}
+	return nil
+}
+
 func GetStartBlockNumber(contract string) uint64 {
 	filter := bson.M{"address": strings.ToLower(contract)}
 	_, idres := GetDocuments(config.DbcollectionSB, filter, &tabletypes.Startblocks{})

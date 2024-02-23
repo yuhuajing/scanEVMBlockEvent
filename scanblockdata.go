@@ -31,7 +31,7 @@ var (
 //}
 
 func main() {
-	//go explorer.Explorer()
+	// go explorer.Explorer()
 	var wg sync.WaitGroup
 	wg.Add(3)
 
